@@ -1,0 +1,63 @@
+.chart-point{
+	&>div{
+		width:100px;
+		color:rgba($white,0.7);
+		.a,.b,.c{
+			height:21px;
+			width:21px;
+			display:block;
+			margin-bottom: 8px;
+			border-radius:5px;
+		}
+		.a{
+			background:#87FFE9;
+		}
+		.b{
+			background:#32A9E1;
+		}
+		.c{
+			background:#0B6050;
+		}
+	}
+}
+#line-chart-2{
+	svg{
+		#SvgjsG1103{
+			path{
+				fill:var(--primary);
+			}
+		}
+	}
+}
+.sales-comparison{
+	background: #32A9E1;
+    background: -moz-linear-gradient(-45deg, var(--primary) 0%, #05737a 100%);
+    background: -webkit-linear-gradient(-45deg, var(--primary) 0%, #05737a 100%);
+    background: linear-gradient(135deg, var(--primary) 0%, #05737a 100%);
+    filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#32A9E1', endColorstr='#05737a',GradientType=1 );
+}
+.abilities-chart{
+	.ct-chart .ct-series.ct-series-a .ct-slice-donut {
+		stroke: #0B6050;
+	}
+	.ct-chart .ct-series.ct-series-b .ct-slice-donut {
+		stroke: var(--primary);
+	}
+	.ct-chart .ct-series.ct-series-c .ct-slice-donut {
+		stroke: #87FFE9;
+	}
+}
+.selling-pie-chart{
+	width:200px;
+	height:200px;
+	margin:30px auto;
+	display:block;
+	canvas{
+		max-height:200px;
+	}
+}
+.card.trending{
+	.media:last-child{
+		border-bottom:none !important;
+	}
+}

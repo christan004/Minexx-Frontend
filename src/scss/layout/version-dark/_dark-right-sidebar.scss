@@ -1,0 +1,39 @@
+[data-theme-version="dark"] {
+    .sidebar-right {
+        background-color: lighten($d-bg, 3.2%);
+
+        .nav-tabs {
+            /* background-color: lighten($d-bg, 3.2%);
+            border-bottom: 1px solid $d-bg; */
+			padding:0 5px ;
+
+            .nav-link {
+				padding:10px 15px 15px;
+                &.active {
+                    background-color: $d-bg;
+                }
+				&:hover{
+					color:var(--primary);
+				}
+            }
+        }
+		.bootstrap-select{ 
+			background-color: $white !important;
+			.btn {
+				border-color:$border !important;
+				background-color: $white !important;
+			}
+		}
+		.dropdown-menu{
+				border-color:$border !important;
+				background-color: $white !important;
+				.dropdown-item{
+					background-color: $white!important;
+					&.active{
+						background-color: $white!important;
+					} 
+				}
+			}
+		
+    }
+}

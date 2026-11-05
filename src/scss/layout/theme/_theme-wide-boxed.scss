@@ -1,0 +1,156 @@
+[data-container="wide-boxed"] {
+    @media (min-width: 992px) {
+        #main-wrapper {
+            max-width: 1480px;
+            margin: 0 auto;
+			border-width: 0 1px;
+			border-style: solid;
+			border-color: $border-color;
+        }
+    }
+}
+
+[data-container="wide-boxed"][data-sidebar-style="full"] {
+    @media (min-width: 992px) {
+        .header {
+            width: 100%;
+			
+        }
+        .menu-toggle {
+            .header {
+                width: 100%;
+            }
+        }
+        @at-root [data-header-position="fixed"]#{&} {
+            .header {
+                max-width: 1478px;
+            }
+            .menu-toggle {
+                .header {
+                    max-width: 1480px;
+                }
+            }
+        }
+    }
+}
+
+[data-container="wide-boxed"][data-sidebar-style="mini"] {
+    @media (min-width: 992px) {
+        .header {
+            width: 100%;
+        }
+        @at-root [data-header-position="fixed"]#{&} {
+            .header {
+                max-width: 1478px;
+            }
+        }
+        @at-root [data-header-position="fixed"][data-layout="horizontal"]#{&} {
+            .header {
+                max-width: 1480px;
+            }
+        }
+    }
+}
+
+[data-container="wide-boxed"][data-sidebar-style="compact"] {
+    @media (min-width: 992px) {
+        .header {
+            width: 100%;
+        }
+        @at-root [data-header-position="fixed"]#{&} {
+            .header {
+                max-width: 1478px;
+            }
+        }
+    }
+}
+[data-header-position="fixed"][data-container="wide-boxed"]{
+	.header {
+        max-width: 1478px;
+    }
+}
+[data-container="wide-boxed"][data-sidebar-style="overlay"] {
+    @media (min-width: 992px) {
+        .header {
+            width: 100%;
+        }
+        @at-root [data-header-position="fixed"]#{&} {
+            .header {
+                max-width: 1480px;
+            }
+        }
+    }
+}
+
+[data-layout="horizontal"][data-container="wide-boxed"] {
+    .header {
+        width: 100%;
+    }
+    @at-root [data-sidebar-style="full"][data-header-position="fixed"]#{&} {
+        .header {
+            max-width: 1480px;
+        }
+    }
+    @at-root [data-sidebar-style="mini"]#{&} {
+        .header {
+            width: 100%;
+        }
+    }
+}
+
+[data-layout="horizontal"][data-container="wide-boxed"][data-sidebar-position="fixed"] {
+    .deznav.fixed {
+        max-width: 1480px;
+        transition: none;
+    }
+    &[direction="rtl"] {
+        .deznav.fixed {
+            right: 5%;
+        }
+    }
+}
+
+[data-layout="horizontal"][data-container="wide-boxed"][data-sidebar-position="fixed"][data-header-position="fixed"] {
+    .deznav {
+        max-width: 1480px;
+        left: 11.15%;
+    }
+    &[direction="rtl"] {
+        .deznav {
+            right: 5%;
+        }
+    }
+}
+[data-header-position="fixed"][data-layout="horizontal"][data-sidebar-position="fixed"][data-container="wide-boxed"]{ 
+	.content-body {
+		padding-top: 11rem;
+	}
+}
+[data-header-position="fixed"][data-layout="horizontal"][data-sidebar-position="fixed"][data-container="wide-boxed"][data-sidebar-style="compact"],
+[data-header-position="fixed"][data-layout="horizontal"][data-sidebar-position="fixed"][data-container="wide-boxed"][data-sidebar-style="modern"]{
+	.content-body {
+		padding-top: 19.5rem;
+	}
+}
+[data-header-position="fixed"][data-layout="horizontal"][data-sidebar-position="fixed"][data-container="wide-boxed"][data-sidebar-style="full"],
+[data-header-position="fixed"][data-layout="horizontal"][data-sidebar-position="fixed"][data-container="wide-boxed"][data-sidebar-style="icon-hover"]{
+	.content-body {
+		padding-top: 16.5rem;
+	}
+}
+[data-sidebar-position="fixed"][data-layout="horizontal"][data-container="wide-boxed"]{
+	.deznav.fixed{
+		left: 11.15%;
+	}
+}
+[data-container="wide-boxed"][data-layout="vertical"][data-sidebar-style="icon-hover"]{
+	.deznav{
+		position: absolute;
+	}
+	
+}
+[data-container="wide-boxed"][data-sidebar-position="fixed"][data-layout="vertical"]{
+	.nav-header{
+		left:auto;
+	}
+}
