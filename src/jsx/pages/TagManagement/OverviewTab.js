@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { tagApi, errorMessage } from './api';
 import { CompanySelect, Field, formatNumber } from './shared';
+import { TagSummary } from './TagDetailModal';
 
 const STAT_ROWS = [
   { key: 'availableCount', label: 'Available', color: '#22c55e' },
@@ -51,7 +52,7 @@ const SummaryCard = ({ row }) => (
   </div>
 );
 
-/** Look a tag up, or check whether a company may use it (no data is changed). */
+/** Look a tag up and, if a company is chosen, check whether it may use the tag (no data is changed). */
 const TagCheck = ({ companies, onOpenTag }) => {
   const [code, setCode] = useState('');
   const [companyId, setCompanyId] = useState('');
@@ -62,9 +63,14 @@ const TagCheck = ({ companies, onOpenTag }) => {
     setChecking(true);
     setResult(null);
     try {
-      setResult(await tagApi.validateTag({ tagCode: code.trim(), companyId }));
+      const tagCode = code.trim();
+      const [tag, usage] = await Promise.all([
+        tagApi.getTag(tagCode),
+        companyId ? tagApi.validateTag({ tagCode, companyId }) : null,
+      ]);
+      setResult({ tag, usage });
     } catch (err) {
-      setResult({ valid: false, message: errorMessage(err) });
+      setResult({ error: errorMessage(err) });
     } finally {
       setChecking(false);
     }
@@ -88,7 +94,7 @@ const TagCheck = ({ companies, onOpenTag }) => {
             </Field>
           </div>
           <div className="col-md-5">
-            <Field label="Company (to check if it can use the tag)">
+            <Field label="Company (optional, to check if it can use the tag)">
               <CompanySelect companies={companies} value={companyId} onChange={(v) => { setCompanyId(v); setResult(null); }} isClearable />
             </Field>
           </div>
@@ -96,17 +102,19 @@ const TagCheck = ({ companies, onOpenTag }) => {
             <button type="button" className="btn btn-outline-primary" disabled={!code.trim()} onClick={() => onOpenTag(code.trim())}>
               History
             </button>
-            <button type="button" className="btn btn-primary" disabled={!code.trim() || !companyId || checking} onClick={check}>
+            <button type="button" className="btn btn-primary" disabled={!code.trim() || checking} onClick={check}>
               {checking ? 'Checking…' : 'Check'}
             </button>
           </div>
         </div>
-        {result && (
-          <div className={`alert mb-0 ${result.valid ? 'alert-success' : 'alert-warning'}`}>
-            {result.valid ? '✓ ' : '✕ '}
-            {result.message}
+        {result?.error && <div className="alert alert-warning mb-0">✕ {result.error}</div>}
+        {result?.usage && (
+          <div className={`alert ${result.usage.valid ? 'alert-success' : 'alert-warning'}`}>
+            {result.usage.valid ? '✓ ' : '✕ '}
+            {result.usage.message}
           </div>
         )}
+        {result?.tag && <TagSummary tag={result.tag} />}
       </div>
     </div>
   );

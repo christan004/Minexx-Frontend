@@ -19,6 +19,26 @@ const describeEvent = (event) => {
   return `${event.fromStatus || '—'} → ${event.toStatus || '—'}${range}${reason}${ref}`;
 };
 
+/** A tag's current details: status, type, company and where it was used. */
+export const TagSummary = ({ tag }) => (
+  <div className="row">
+    <div className="col-md-6">
+      <Row label="Status"><StatusBadge status={tag.status} /></Row>
+      <Row label="Tag type">{tag.tagTypeName}</Row>
+      <Row label="Serial number">{tag.serialNo}</Row>
+      <Row label="Batch">{tag.batchCode}</Row>
+    </div>
+    <div className="col-md-6">
+      <Row label="Company">{tag.companyName || tag.companyId}</Row>
+      <Row label="Allocation">{tag.allocationCode}</Row>
+      <Row label="Used on">{tag.usedRefTable ? `${tag.usedRefTable} ${tag.usedRefId || ''}` : null}</Row>
+      <Row label={tag.status === 'VOID' ? 'Void reason' : 'Used at'}>
+        {tag.status === 'VOID' ? tag.voidReason : tag.usedAt ? formatDate(tag.usedAt) : null}
+      </Row>
+    </div>
+  </div>
+);
+
 /** Shows one tag with its full history. `tagCode` null closes the modal. */
 const TagDetailModal = ({ tagCode, onClose }) => {
   const [tag, setTag] = useState(null);
@@ -47,22 +67,7 @@ const TagDetailModal = ({ tagCode, onClose }) => {
         )}
         {tag && (
           <>
-            <div className="row">
-              <div className="col-md-6">
-                <Row label="Status"><StatusBadge status={tag.status} /></Row>
-                <Row label="Tag type">{tag.tagTypeName}</Row>
-                <Row label="Serial number">{tag.serialNo}</Row>
-                <Row label="Batch">{tag.batchCode}</Row>
-              </div>
-              <div className="col-md-6">
-                <Row label="Company">{tag.companyName || tag.companyId}</Row>
-                <Row label="Allocation">{tag.allocationCode}</Row>
-                <Row label="Used on">{tag.usedRefTable ? `${tag.usedRefTable} ${tag.usedRefId || ''}` : null}</Row>
-                <Row label={tag.status === 'VOID' ? 'Void reason' : 'Used at'}>
-                  {tag.status === 'VOID' ? tag.voidReason : tag.usedAt ? formatDate(tag.usedAt) : null}
-                </Row>
-              </div>
-            </div>
+            <TagSummary tag={tag} />
 
             <h5 className="mt-4 mb-3">History</h5>
             <div className="table-responsive">
