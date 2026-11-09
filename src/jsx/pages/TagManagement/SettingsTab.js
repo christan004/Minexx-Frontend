@@ -7,7 +7,7 @@
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { tagApi, errorMessage } from './api';
-import { CompanySelect, Field, TableMessage, TypeSelect, formatDate } from './shared';
+import { CompanySelect, Field, TableMessage, TypeSelect, UNCLASSIFIED_CODE, formatDate } from './shared';
 
 const exampleCode = (prefix, digits) => {
   const n = Number(digits) || 0;
@@ -201,7 +201,10 @@ const CompanyMinimums = ({ types, companies, refreshKey, onChanged }) => {
   );
 };
 
-const SettingsTab = ({ types, companies, refreshKey, onChanged }) => (
+const SettingsTab = ({ types: allTypes, companies, refreshKey, onChanged }) => {
+  // Unclassified opening stock has no prefix or minimums of its own
+  const types = allTypes.filter((t) => t.code !== UNCLASSIFIED_CODE);
+  return (
   <>
     <div className="card">
       <div className="card-header">
@@ -240,6 +243,7 @@ const SettingsTab = ({ types, companies, refreshKey, onChanged }) => (
 
     <CompanyMinimums types={types} companies={companies} refreshKey={refreshKey} onChanged={onChanged} />
   </>
-);
+  );
+};
 
 export default SettingsTab;

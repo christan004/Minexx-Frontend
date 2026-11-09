@@ -3,9 +3,10 @@ import { Modal } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { tagApi, errorMessage } from './api';
 import {
-  Field, Pagination, PAGE_SIZE, RangeLabel, StatusBadge, TableMessage, TypeSelect,
+  Field, Pagination, PAGE_SIZE, RangeLabel, StatusBadge, TableMessage, TypeSelect, UNCLASSIFIED_CODE,
   formatDate, formatNumber,
 } from './shared';
+import { ClassifyModal, OpeningStockModal } from './OpeningStock';
 
 const MAX_BATCH_QUANTITY = 50000;
 
@@ -317,7 +318,11 @@ const BatchDetailModal = ({ batchId, onClose, onShowTags }) => {
   );
 };
 
-const BatchesTab = ({ types, isAdmin, onChanged, onShowTags, refreshKey }) => {
+const BatchesTab = ({ types, companies, isAdmin, onChanged, onShowTags, refreshKey }) => {
+  // Real tag types (Unclassified is only for opening stock waiting to be classified)
+  const usableTypes = types.filter((t) => t.isActive && t.code !== UNCLASSIFIED_CODE);
+  const [showOpening, setShowOpening] = useState(false);
+  const [classify, setClassify] = useState(null); // { batch } when open
   const [filters, setFilters] = useState({ tagTypeId: '', status: '', search: '' });
   const [page, setPage] = useState(1);
   const [data, setData] = useState({ items: [], total: 0, page: 1, limit: PAGE_SIZE });
@@ -350,9 +355,17 @@ const BatchesTab = ({ types, isAdmin, onChanged, onShowTags, refreshKey }) => {
       <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h4 className="card-title mb-0">Batches</h4>
         {isAdmin && (
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowGenerate(true)} disabled={types.length === 0}>
-            <i className="fa fa-plus me-2" />Generate batch
-          </button>
+          <div className="d-flex gap-2 flex-wrap">
+            <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => setClassify({ batch: null })}>
+              <i className="fa fa-tags me-2" />Classify tags
+            </button>
+            <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => setShowOpening(true)}>
+              <i className="fa fa-box-open me-2" />Register opening stock
+            </button>
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowGenerate(true)} disabled={usableTypes.length === 0}>
+              <i className="fa fa-plus me-2" />Generate batch
+            </button>
+          </div>
         )}
       </div>
       <div className="card-body">
@@ -398,11 +411,19 @@ const BatchesTab = ({ types, isAdmin, onChanged, onShowTags, refreshKey }) => {
               )}
               {data.items.map((b) => {
                 const cancellable = b.status === 'ACTIVE' && b.availableCount === b.quantity;
+                const unclassified = b.status === 'ACTIVE' && b.tagTypeCode === UNCLASSIFIED_CODE;
+                const gaps = b.quantity !== b.endNo - b.startNo + 1;
                 return (
                   <tr key={b.id}>
-                    <td className="fw-bold">{b.batchCode}</td>
+                    <td className="fw-bold">
+                      {b.batchCode}
+                      {b.source === 'OPENING' && <div><span className="badge light badge-warning">Opening stock</span></div>}
+                    </td>
                     <td>{b.tagTypeName}</td>
-                    <td><RangeLabel first={formatTagCode(b.prefix, b.startNo, b.serialLength)} last={formatTagCode(b.prefix, b.endNo, b.serialLength)} /></td>
+                    <td>
+                      <RangeLabel first={formatTagCode(b.prefix, b.startNo, b.serialLength)} last={formatTagCode(b.prefix, b.endNo, b.serialLength)} />
+                      {gaps && <div><small className="text-muted">not continuous</small></div>}
+                    </td>
                     <td>{formatNumber(b.quantity)}</td>
                     <td>{formatNumber(b.availableCount)}</td>
                     <td>{formatNumber(b.assignedCount)}</td>
@@ -412,6 +433,9 @@ const BatchesTab = ({ types, isAdmin, onChanged, onShowTags, refreshKey }) => {
                     <td className="text-nowrap"><small>{formatDate(b.createdAt)}<br /><span className="text-muted">{b.createdBy}</span></small></td>
                     <td className="text-end text-nowrap">
                       <button type="button" className="btn btn-sm btn-outline-primary me-1" onClick={() => setDetailId(b.id)}>View</button>
+                      {isAdmin && unclassified && (
+                        <button type="button" className="btn btn-sm btn-outline-info me-1" onClick={() => setClassify({ batch: b })}>Classify</button>
+                      )}
                       {isAdmin && cancellable && (
                         <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setToCancel(b)}>Cancel</button>
                       )}
@@ -425,9 +449,24 @@ const BatchesTab = ({ types, isAdmin, onChanged, onShowTags, refreshKey }) => {
         <Pagination page={data.page} limit={data.limit} total={data.total} onChange={setPage} />
       </div>
 
+      <OpeningStockModal
+        show={showOpening}
+        types={usableTypes}
+        companies={companies.filter((c) => String(c.country || '').trim().toUpperCase() === 'DRC')}
+        onClose={() => setShowOpening(false)}
+        onDone={() => { setShowOpening(false); afterChange(); }}
+      />
+      <ClassifyModal
+        show={Boolean(classify)}
+        types={usableTypes}
+        allTypes={types}
+        presetBatch={classify?.batch || null}
+        onClose={() => setClassify(null)}
+        onDone={() => { setClassify(null); afterChange(); }}
+      />
       <GenerateBatchModal
         show={showGenerate}
-        types={types.filter((t) => t.isActive)}
+        types={usableTypes}
         onClose={() => setShowGenerate(false)}
         onCreated={() => { setShowGenerate(false); afterChange(); }}
       />

@@ -5,7 +5,14 @@ import moment from 'moment';
 export const PAGE_SIZE = 25;
 
 export const TAG_STATUSES = ['AVAILABLE', 'ASSIGNED', 'USED', 'VOID'];
-export const EVENT_TYPES = ['GENERATED', 'BATCH_CANCELLED', 'ASSIGNED', 'RETURNED', 'USED', 'VOIDED'];
+export const EVENT_TYPES = ['GENERATED', 'BATCH_CANCELLED', 'ASSIGNED', 'RETURNED', 'USED', 'VOIDED', 'REGISTERED', 'CLASSIFIED'];
+
+// Opening stock registered without a type; it cannot be used until classified
+export const UNCLASSIFIED_CODE = 'UNCLASSIFIED';
+
+/** Tag codes from pasted text or a CSV: split on new lines, commas, semicolons, tabs and spaces. */
+export const parseCodeList = (text) =>
+  [...new Set(String(text || '').split(/[\s,;]+/).map((c) => c.replace(/^"|"$/g, '').trim()).filter(Boolean))];
 
 // Badge classes from the dashboard theme
 const BADGE = {
@@ -19,6 +26,9 @@ const BADGE = {
   GENERATED: 'badge-success',
   BATCH_CANCELLED: 'badge-danger',
   VOIDED: 'badge-danger',
+  REGISTERED: 'badge-success',
+  CLASSIFIED: 'badge-info',
+  OPENING: 'badge-warning',
 };
 
 export const StatusBadge = ({ status }) => (

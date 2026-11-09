@@ -39,6 +39,10 @@ export const tagApi = {
   getBatch: (id) => get(`batches/${id}`),
   cancelBatch: (id, reason) => post(`batches/${id}/cancel`, { reason }),
 
+  // Opening stock (dryRun: true only checks) and classification of Unclassified tags
+  registerOpeningStock: (body) => post('opening-stock', body),
+  classifyTags: (body) => post('classify', body),
+
   availableRanges: (tagTypeId) => get('available-ranges', { tagTypeId }),
   assignTags: (body) => post('allocations', body),
   listAllocations: (filters) => get('allocations', clean(filters)),

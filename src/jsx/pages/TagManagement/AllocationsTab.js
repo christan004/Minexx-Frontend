@@ -3,7 +3,7 @@ import { Modal } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { tagApi, errorMessage } from './api';
 import {
-  CompanySelect, Field, Pagination, PAGE_SIZE, RangeLabel, StatusBadge, TableMessage, TypeSelect,
+  CompanySelect, Field, Pagination, PAGE_SIZE, RangeLabel, StatusBadge, TableMessage, TypeSelect, UNCLASSIFIED_CODE,
   formatDate, formatNumber,
 } from './shared';
 
@@ -347,7 +347,7 @@ const AllocationsTab = ({ types, companies: allCompanies, isAdmin, onChanged, on
 
       <AssignTagsModal
         show={showAssign}
-        types={types.filter((t) => t.isActive)}
+        types={types.filter((t) => t.isActive && t.code !== UNCLASSIFIED_CODE)}
         companies={companies}
         onClose={() => setShowAssign(false)}
         onAssigned={() => { setShowAssign(false); afterChange(); }}
