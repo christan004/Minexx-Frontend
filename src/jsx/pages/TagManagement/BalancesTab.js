@@ -19,7 +19,9 @@ const downloadCsv = (rows) => {
   URL.revokeObjectURL(url);
 };
 
-const BalancesTab = ({ types, companies, refreshKey }) => {
+const BalancesTab = ({ types, companies, refreshKey, stockAlerts }) => {
+  // companyId-tagTypeId -> alert, for rows at or below their minimum
+  const lowByKey = new Map((stockAlerts?.companies || []).map((a) => [`${a.companyId}-${a.tagTypeId}`, a]));
   const [filters, setFilters] = useState({ companyId: '', tagTypeId: '' });
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -79,14 +81,22 @@ const BalancesTab = ({ types, companies, refreshKey }) => {
               )}
               {!loading && rows.map((r) => {
                 const usedPct = r.assignedTotal ? Math.round((r.usedCount / r.assignedTotal) * 100) : 0;
+                const low = lowByKey.get(`${r.companyId}-${r.tagTypeId}`);
                 return (
-                  <tr key={`${r.companyId}-${r.tagTypeId}`}>
+                  <tr key={`${r.companyId}-${r.tagTypeId}`} style={low ? { background: 'rgba(239,68,68,0.12)' } : undefined}>
                     <td>{r.companyName || r.companyId}</td>
                     <td>{r.tagTypeName}</td>
                     <td>{formatNumber(r.assignedTotal)}</td>
                     <td>{formatNumber(r.usedCount)}</td>
                     <td>{formatNumber(r.voidCount)}</td>
-                    <td className="fw-bold">{formatNumber(r.remainingCount)}</td>
+                    <td className="fw-bold">
+                      {formatNumber(r.remainingCount)}
+                      {low && (
+                        <span className="badge badge-danger ms-2" title={`Minimum ${formatNumber(low.minimum)}`}>
+                          Low (min {formatNumber(low.minimum)})
+                        </span>
+                      )}
+                    </td>
                     <td>
                       <div className="d-flex align-items-center gap-2">
                         <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3 }}>

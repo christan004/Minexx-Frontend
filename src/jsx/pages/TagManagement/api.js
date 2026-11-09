@@ -9,6 +9,8 @@ const BASE = 'tag-management';
 
 const get = async (path, params) => (await axiosInstance.get(`${BASE}/${path}`, { params })).data.data;
 const post = async (path, body) => (await axiosInstance.post(`${BASE}/${path}`, body)).data.data;
+const put = async (path, body) => (await axiosInstance.put(`${BASE}/${path}`, body)).data.data;
+const del = async (path) => (await axiosInstance.delete(`${BASE}/${path}`)).data.data;
 
 // Drop empty filter values so they are not sent as `?status=`.
 const clean = (params = {}) =>
@@ -22,6 +24,14 @@ export const tagApi = {
   types: () => get('types'),
   summary: () => get('summary'),
   companies: (search) => get('companies', clean({ search })),
+
+  // Settings (admin) and low stock alerts
+  updateTypeSettings: (id, body) => put(`types/${id}`, body),
+  companyMinimums: () => get('company-minimums'),
+  setCompanyMinimum: (body) => put('company-minimums', body),
+  removeCompanyMinimum: (companyId, tagTypeId) =>
+    del(`company-minimums/${encodeURIComponent(companyId)}/${tagTypeId}`),
+  stockAlerts: () => get('stock-alerts'),
 
   nextStart: (prefix) => get('batches/next-start', clean({ prefix })),
   generateBatch: (body) => post('batches', body),

@@ -14,7 +14,11 @@ import TagsTab from './TagsTab';
 import BalancesTab from './BalancesTab';
 import EventsTab from './EventsTab';
 import IssuesTab from './IssuesTab';
+import SettingsTab from './SettingsTab';
+import StockAlerts from './StockAlerts';
 import TagDetailModal from './TagDetailModal';
+
+const NO_ALERTS = { system: [], companies: [] };
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: 'fa-chart-pie' },
@@ -25,6 +29,7 @@ const TABS = [
   // Hidden for now; remove `hidden` to bring these tabs back
   { key: 'issues', label: 'Tag Issues', icon: 'fa-exclamation-triangle', hidden: true },
   { key: 'events', label: 'Audit Log', icon: 'fa-history', adminOnly: true, hidden: true },
+  { key: 'settings', label: 'Settings', icon: 'fa-cog', adminOnly: true },
 ];
 
 const TagManagement = () => {
@@ -42,8 +47,14 @@ const TagManagement = () => {
   const [openTag, setOpenTag] = useState(null);
 
   const [openIssues, setOpenIssues] = useState(0);
+  const [stockAlerts, setStockAlerts] = useState(NO_ALERTS);
 
   const loadSummary = useCallback(() => tagApi.summary().then(setSummary), []);
+  // Alerts never block the page: on any error the banner is simply not shown
+  const loadStockAlerts = useCallback(
+    () => tagApi.stockAlerts().then(setStockAlerts).catch(() => setStockAlerts(NO_ALERTS)),
+    []
+  );
   const loadOpenIssues = useCallback(
     () => tagApi.useFailures({ status: 'OPEN', limit: 1 }).then((res) => setOpenIssues(res.total)).catch(() => {}),
     []
@@ -59,14 +70,17 @@ const TagManagement = () => {
       .catch((err) => setError(errorMessage(err)))
       .finally(() => setLoading(false));
     loadOpenIssues();
-  }, [loadOpenIssues]);
+    loadStockAlerts();
+  }, [loadOpenIssues, loadStockAlerts]);
 
-  // After any change: refresh the stock summary and let every tab reload its list
+  // After any change: refresh types (settings), the stock summary and alerts, and let every tab reload its list
   const handleChanged = useCallback(() => {
+    tagApi.types().then(setTypes).catch(() => {});
     loadSummary().catch(() => {});
     loadOpenIssues();
+    loadStockAlerts();
     setRefreshKey((k) => k + 1);
-  }, [loadSummary, loadOpenIssues]);
+  }, [loadSummary, loadOpenIssues, loadStockAlerts]);
 
   const showTags = (preset) => {
     setTagPreset(preset);
@@ -99,6 +113,11 @@ const TagManagement = () => {
                 {t.key === 'issues' && openIssues > 0 && (
                   <span className="badge badge-danger ms-2" aria-label={`${openIssues} open issues`}>{openIssues}</span>
                 )}
+                {t.key === 'balances' && stockAlerts.companies.length > 0 && (
+                  <span className="badge badge-danger ms-2" aria-label={`${stockAlerts.companies.length} companies low on tags`}>
+                    {stockAlerts.companies.length}
+                  </span>
+                )}
               </button>
             </li>
           ))}
@@ -114,14 +133,21 @@ const TagManagement = () => {
       )}
 
       {!loading && !error && (
+        <StockAlerts alerts={stockAlerts} isAdmin={isAdmin} onOpenSettings={() => setTab('settings')} />
+      )}
+
+      {!loading && !error && (
         <>
-          {tab === 'overview' && <OverviewTab summary={summary} companies={companies} onOpenTag={setOpenTag} />}
+          {tab === 'overview' && (
+            <OverviewTab summary={summary} types={types} stockAlerts={stockAlerts} companies={companies} onOpenTag={setOpenTag} />
+          )}
           {tab === 'batches' && <BatchesTab {...shared} onShowTags={showTags} />}
           {tab === 'allocations' && <AllocationsTab {...shared} onShowTags={showTags} />}
           {tab === 'tags' && <TagsTab {...shared} preset={tagPreset} onClearPreset={() => setTagPreset(null)} />}
-          {tab === 'balances' && <BalancesTab {...shared} />}
+          {tab === 'balances' && <BalancesTab {...shared} stockAlerts={stockAlerts} />}
           {tab === 'issues' && <IssuesTab {...shared} />}
           {tab === 'events' && isAdmin && <EventsTab {...shared} />}
+          {tab === 'settings' && isAdmin && <SettingsTab {...shared} />}
         </>
       )}
 

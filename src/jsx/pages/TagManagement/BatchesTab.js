@@ -98,7 +98,22 @@ const GenerateBatchModal = ({ show, types, onClose, onCreated }) => {
             </Field>
           </div>
           <div className="col-md-3">
-            <Field label="Prefix" hint="Letters, digits, '-'">
+            <Field
+              label="Prefix"
+              hint={
+                !type?.defaultPrefix ? 'No default yet: set one in Settings'
+                  : form.prefix === type.defaultPrefix ? 'Default from Settings'
+                    : (
+                      <>
+                        Default is {type.defaultPrefix}.{' '}
+                        <button type="button" className="btn btn-link btn-sm p-0 align-baseline"
+                          onClick={() => set({ prefix: type.defaultPrefix, serialLength: type.serialLength || 0 })}>
+                          Use default
+                        </button>
+                      </>
+                    )
+              }
+            >
               <input
                 className="form-control"
                 value={form.prefix || ''}

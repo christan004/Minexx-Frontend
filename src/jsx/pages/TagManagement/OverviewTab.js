@@ -12,17 +12,22 @@ const STAT_ROWS = [
 
 const ICONS = { MINE_BAG: 'fa-cube', COMPTOIR_TAG: 'fa-industry', EXPORT_TAG: 'fa-ship' };
 
-const SummaryCard = ({ row }) => (
+const SummaryCard = ({ row, minimum, low }) => (
   <div className="col-xl-4 col-lg-6 mb-3">
-    <div className="card h-100 mb-0" style={{ backgroundColor: '#1A2228' }}>
+    <div className="card h-100 mb-0" style={{ backgroundColor: '#1A2228', ...(low ? { border: '1px solid #ef4444' } : {}) }}>
       <div className="card-body">
         <div className="d-flex justify-content-between align-items-start mb-3">
           <div>
-            <h6 className="text-muted mb-1">{row.tagTypeName}</h6>
+            <h6 className="text-muted mb-1">
+              {row.tagTypeName}
+              {low && <span className="badge badge-danger ms-2">Low stock</span>}
+            </h6>
             <h2 className="text-primary mb-0" style={{ fontSize: '2.2rem', fontWeight: 700 }}>
               {formatNumber(row.total)}
             </h2>
-            <small className="text-muted">tags generated</small>
+            <small className="text-muted">
+              tags generated{minimum > 0 ? ` · alert at ${formatNumber(minimum)} available` : ''}
+            </small>
           </div>
           <div
             style={{
@@ -120,11 +125,16 @@ const TagCheck = ({ companies, onOpenTag }) => {
   );
 };
 
-const OverviewTab = ({ summary, companies, onOpenTag }) => (
+const OverviewTab = ({ summary, types = [], stockAlerts, companies, onOpenTag }) => (
   <>
     <div className="row">
       {summary.map((row) => (
-        <SummaryCard key={row.tagTypeId} row={row} />
+        <SummaryCard
+          key={row.tagTypeId}
+          row={row}
+          minimum={types.find((t) => t.id === row.tagTypeId)?.minAvailable || 0}
+          low={Boolean(stockAlerts?.system.some((a) => a.tagTypeId === row.tagTypeId))}
+        />
       ))}
     </div>
     <TagCheck companies={companies} onOpenTag={onOpenTag} />
