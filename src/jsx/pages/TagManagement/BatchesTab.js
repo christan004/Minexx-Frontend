@@ -3,10 +3,22 @@ import { Modal } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { tagApi, errorMessage } from './api';
 import {
-  Field, Pagination, PAGE_SIZE, RangeLabel, StatusBadge, TableMessage, TypeSelect, UNCLASSIFIED_CODE,
+  Field, Pagination, RangeLabel, StatusBadge, TableMessage, TypeSelect, UNCLASSIFIED_CODE,
   formatDate, formatNumber,
 } from './shared';
 import { ClassifyModal, OpeningStockModal } from './OpeningStock';
+import {
+  DateRangeFilter, ExportButtons, FilterPanel, MultiSelect, PageSize, SelectFilter, SortTh, TextFilter, TotalsBar,
+  resolveRange, toQuery, useUrlFilters,
+} from './reports';
+
+const BATCH_DEFAULTS = {
+  page: '1', limit: '25', sort: '', dir: 'desc',
+  search: '', tagTypeId: '', source: '', status: '', range: '', from: '', to: '', createdBy: '', usage: '',
+};
+const SOURCE_OPTIONS = [{ value: 'GENERATED', label: 'Generated' }, { value: 'OPENING', label: 'Opening stock' }];
+const STATUS_OPTIONS = [{ value: 'ACTIVE', label: 'Active' }, { value: 'CANCELLED', label: 'Cancelled' }];
+const USAGE_OPTIONS = [['', 'Any usage'], ['unused', 'Not used (all available)'], ['partial', 'Partly given out'], ['full', 'Nothing left to give']];
 
 const MAX_BATCH_QUANTITY = 50000;
 
@@ -323,32 +335,36 @@ const BatchesTab = ({ types, companies, isAdmin, onChanged, onShowTags, refreshK
   const usableTypes = types.filter((t) => t.isActive && t.code !== UNCLASSIFIED_CODE);
   const [showOpening, setShowOpening] = useState(false);
   const [classify, setClassify] = useState(null); // { batch } when open
-  const [filters, setFilters] = useState({ tagTypeId: '', status: '', search: '' });
-  const [page, setPage] = useState(1);
-  const [data, setData] = useState({ items: [], total: 0, page: 1, limit: PAGE_SIZE });
+  const [filters, setFilters, clearFilters, active] = useUrlFilters('batches', BATCH_DEFAULTS);
+  const [data, setData] = useState({ items: [], total: 0, page: 1, limit: 25, totals: {} });
   const [loading, setLoading] = useState(true);
   const [showGenerate, setShowGenerate] = useState(false);
   const [detailId, setDetailId] = useState(null);
   const [toCancel, setToCancel] = useState(null);
 
+  const created = resolveRange(filters.range, filters.from, filters.to);
+  const query = { ...toQuery(filters, ['range', 'from', 'to']), from: created.from, to: created.to };
+  const queryKey = JSON.stringify(query);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await tagApi.listBatches({ ...filters, page, limit: PAGE_SIZE }));
+      setData(await tagApi.listBatches(JSON.parse(queryKey)));
     } catch (err) {
       toast.error(errorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [filters, page]);
+  }, [queryKey]);
 
   useEffect(() => {
-    const timer = setTimeout(load, 250); // debounce typing in the search box
+    const timer = setTimeout(load, 300); // debounce typing in the search box
     return () => clearTimeout(timer);
   }, [load, refreshKey]);
 
-  const setFilter = (patch) => { setFilters((prev) => ({ ...prev, ...patch })); setPage(1); };
   const afterChange = () => { load(); onChanged(); };
+  const sortProps = { filters, onSort: setFilters };
+  const typeOptions = types.map((t) => ({ value: String(t.id), label: t.name }));
 
   return (
     <div className="card">
@@ -356,6 +372,7 @@ const BatchesTab = ({ types, companies, isAdmin, onChanged, onShowTags, refreshK
         <h4 className="card-title mb-0">Batches</h4>
         {isAdmin && (
           <div className="d-flex gap-2 flex-wrap">
+            <ExportButtons report="batches" params={query} disabled={data.total === 0} />
             <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => setClassify({ batch: null })}>
               <i className="fa fa-tags me-2" />Classify tags
             </button>
@@ -369,44 +386,70 @@ const BatchesTab = ({ types, companies, isAdmin, onChanged, onShowTags, refreshK
         )}
       </div>
       <div className="card-body">
-        <div className="row mb-3">
-          <div className="col-md-4 mb-2">
-            <TypeSelect types={types} value={filters.tagTypeId} onChange={(v) => setFilter({ tagTypeId: v })} allLabel="All tag types" />
+        <FilterPanel
+          active={active}
+          onClear={clearFilters}
+          more={(
+            <>
+              <div className="col-md-3">
+                <SelectFilter label="Usage" value={filters.usage} onChange={(v) => setFilters({ usage: v })} options={USAGE_OPTIONS} />
+              </div>
+              <div className="col-md-3">
+                <TextFilter label="Created by" value={filters.createdBy} onChange={(v) => setFilters({ createdBy: v })} placeholder="Starts with…" />
+              </div>
+            </>
+          )}
+        >
+          <div className="col-md-3">
+            <TextFilter label="Search" value={filters.search} onChange={(v) => setFilters({ search: v })} placeholder="Batch code, prefix or a number" />
           </div>
-          <div className="col-md-3 mb-2">
-            <select className="form-control" value={filters.status} onChange={(e) => setFilter({ status: e.target.value })}>
-              <option value="">All statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="CANCELLED">Cancelled</option>
-            </select>
+          <div className="col-md-3">
+            <MultiSelect label="Tag type" options={typeOptions} value={filters.tagTypeId} onChange={(v) => setFilters({ tagTypeId: v })} placeholder="All types" />
           </div>
-          <div className="col-md-5 mb-2">
-            <input className="form-control" placeholder="Search batch code, prefix or a tag number…" value={filters.search} onChange={(e) => setFilter({ search: e.target.value })} />
+          <div className="col-md-2">
+            <MultiSelect label="Source" options={SOURCE_OPTIONS} value={filters.source} onChange={(v) => setFilters({ source: v })} placeholder="All" />
           </div>
-        </div>
+          <div className="col-md-2">
+            <MultiSelect label="Status" options={STATUS_OPTIONS} value={filters.status} onChange={(v) => setFilters({ status: v })} placeholder="All" />
+          </div>
+          <div className="col-md-2">
+            <DateRangeFilter label="Created" value={{ range: filters.range, from: filters.from, to: filters.to }}
+              onChange={(v) => setFilters({ range: v.range, from: v.from, to: v.to })} />
+          </div>
+        </FilterPanel>
+
+        <TotalsBar items={[
+          ['Batches', data.total],
+          ['Tags', data.totals?.quantity || 0],
+          ['Available', data.totals?.available || 0, '#22c55e'],
+          ['Assigned', data.totals?.assigned || 0, '#38bdf8'],
+          ['Used', data.totals?.used || 0, '#a78bfa'],
+          ['Void', data.totals?.void || 0, '#f87171'],
+        ]} />
 
         <div className="table-responsive">
           <table className="table">
             <thead>
               <tr>
-                <th>Batch</th>
-                <th>Type</th>
+                <SortTh label="Batch" sortKey="batchCode" {...sortProps} />
+                <SortTh label="Type" sortKey="tagTypeName" {...sortProps} />
                 <th>Range</th>
-                <th>Qty</th>
-                <th>Available</th>
-                <th>Assigned</th>
-                <th>Used</th>
+                <SortTh label="Qty" sortKey="quantity" {...sortProps} />
+                <SortTh label="Available" sortKey="availableCount" {...sortProps} />
+                <SortTh label="Assigned" sortKey="assignedCount" {...sortProps} />
+                <SortTh label="Used" sortKey="usedCount" {...sortProps} />
+                <SortTh label="% used" sortKey="usedPct" {...sortProps} style={{ minWidth: 140 }} />
                 <th>Void</th>
-                <th>Status</th>
-                <th>Created</th>
+                <SortTh label="Status" sortKey="status" {...sortProps} />
+                <SortTh label="Created" sortKey="createdAt" {...sortProps} />
                 <th className="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {loading && data.items.length === 0 && <TableMessage colSpan={11} loading />}
+              {loading && data.items.length === 0 && <TableMessage colSpan={12} loading />}
               {!loading && data.items.length === 0 && (
-                <TableMessage colSpan={11}>
-                  No batches yet.{isAdmin ? ' Use “Generate batch” to create the first range of tags.' : ''}
+                <TableMessage colSpan={12}>
+                  {active > 0 ? 'No batches match these filters' : 'No batches yet. Use “Generate batch” to create the first range of tags.'}
                 </TableMessage>
               )}
               {data.items.map((b) => {
@@ -428,6 +471,14 @@ const BatchesTab = ({ types, companies, isAdmin, onChanged, onShowTags, refreshK
                     <td>{formatNumber(b.availableCount)}</td>
                     <td>{formatNumber(b.assignedCount)}</td>
                     <td>{formatNumber(b.usedCount)}</td>
+                    <td>
+                      <div className="d-flex align-items-center gap-2">
+                        <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3 }}>
+                          <div style={{ width: `${b.quantity ? Math.round((b.usedCount / b.quantity) * 100) : 0}%`, height: '100%', background: '#a78bfa', borderRadius: 3 }} />
+                        </div>
+                        <small className="text-muted">{b.quantity ? Math.round((b.usedCount / b.quantity) * 100) : 0}%</small>
+                      </div>
+                    </td>
                     <td>{formatNumber(b.voidCount)}</td>
                     <td><StatusBadge status={b.status} /></td>
                     <td className="text-nowrap"><small>{formatDate(b.createdAt)}<br /><span className="text-muted">{b.createdBy}</span></small></td>
@@ -446,7 +497,12 @@ const BatchesTab = ({ types, companies, isAdmin, onChanged, onShowTags, refreshK
             </tbody>
           </table>
         </div>
-        <Pagination page={data.page} limit={data.limit} total={data.total} onChange={setPage} />
+        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <PageSize value={filters.limit} onChange={(v) => setFilters({ limit: v })} />
+          <div className="flex-grow-1">
+            <Pagination page={data.page} limit={data.limit} total={data.total} onChange={(p) => setFilters({ page: String(p) })} />
+          </div>
+        </div>
       </div>
 
       <OpeningStockModal

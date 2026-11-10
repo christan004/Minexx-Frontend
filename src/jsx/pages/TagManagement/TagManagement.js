@@ -3,8 +3,8 @@
  * (available → assigned → used / void) and review the audit trail.
  * Backend: /tag-management/* (MinexxAPI src/controller/TagManagement.js).
  */
-import React, { useCallback, useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { tagApi, errorMessage } from './api';
 import { isAdminUser } from './shared';
 import OverviewTab from './OverviewTab';
@@ -22,7 +22,7 @@ const NO_ALERTS = { system: [], companies: [] };
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: 'fa-chart-pie' },
-  { key: 'batches', label: 'Batches', icon: 'fa-layer-group' },
+  { key: 'batches', label: 'Batches', icon: 'fa-layer-group', adminOnly: true },
   { key: 'allocations', label: 'Allocations', icon: 'fa-share-alt' },
   { key: 'tags', label: 'Tags', icon: 'fa-tag' },
   { key: 'balances', label: 'Balances', icon: 'fa-balance-scale' },
@@ -36,15 +36,32 @@ const TagManagement = () => {
   const isAdmin = isAdminUser();
   const platform = localStorage.getItem('_dash') || '3ts';
 
-  const [tab, setTab] = useState('overview');
+  // The open tab and every tab's filters live in the page address, so a report can be shared
+  const [params, setParams] = useSearchParams();
+  const visibleTabs = TABS.filter((t) => !t.hidden && (!t.adminOnly || isAdmin));
+  const tab = visibleTabs.some((t) => t.key === params.get('tab')) ? params.get('tab') : 'overview';
+  const setTab = (key) => {
+    const next = new URLSearchParams(params);
+    next.set('tab', key);
+    setParams(next, { replace: true });
+  };
+
   const [types, setTypes] = useState([]);
   const [summary, setSummary] = useState([]);
-  const [companies, setCompanies] = useState([]);
+  const [allCompanies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const [tagPreset, setTagPreset] = useState(null);
   const [openTag, setOpenTag] = useState(null);
+
+  // Company users only pick from their own companies (the API limits the data the same way)
+  const companies = useMemo(() => {
+    if (isAdmin) return allCompanies;
+    let user = null;
+    try { user = JSON.parse(localStorage.getItem('_authUsr')); } catch (e) { user = null; }
+    const own = [user?.company, ...(user?.companies || [])].filter(Boolean).map(String);
+    return allCompanies.filter((c) => own.includes(String(c.id)));
+  }, [allCompanies, isAdmin]);
 
   const [openIssues, setOpenIssues] = useState(0);
   const [stockAlerts, setStockAlerts] = useState(NO_ALERTS);
@@ -56,8 +73,10 @@ const TagManagement = () => {
     []
   );
   const loadOpenIssues = useCallback(
-    () => tagApi.useFailures({ status: 'OPEN', limit: 1 }).then((res) => setOpenIssues(res.total)).catch(() => {}),
-    []
+    () => (isAdmin
+      ? tagApi.useFailures({ status: 'OPEN', limit: 1 }).then((res) => setOpenIssues(res.total)).catch(() => {})
+      : Promise.resolve()),
+    [isAdmin]
   );
 
   useEffect(() => {
@@ -82,9 +101,13 @@ const TagManagement = () => {
     setRefreshKey((k) => k + 1);
   }, [loadSummary, loadOpenIssues, loadStockAlerts]);
 
+  // Open the Tags tab filtered on a batch or allocation ({ batchId } or { allocationId })
   const showTags = (preset) => {
-    setTagPreset(preset);
-    setTab('tags');
+    const next = new URLSearchParams(params);
+    [...next.keys()].filter((key) => key.startsWith('tags.')).forEach((key) => next.delete(key));
+    Object.entries(preset).forEach(([key, value]) => next.set(`tags.${key}`, String(value)));
+    next.set('tab', 'tags');
+    setParams(next, { replace: true });
   };
 
   const shared = { types, companies, isAdmin, refreshKey, onChanged: handleChanged, onOpenTag: setOpenTag };
@@ -100,14 +123,14 @@ const TagManagement = () => {
 
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <ul className="nav nav-pills" role="tablist">
-          {TABS.filter((t) => !t.hidden && (!t.adminOnly || isAdmin)).map((t) => (
+          {visibleTabs.map((t) => (
             <li className="nav-item" key={t.key}>
               <button
                 type="button"
                 role="tab"
                 aria-selected={tab === t.key}
                 className={`nav-link ${tab === t.key ? 'active' : ''}`}
-                onClick={() => { setTab(t.key); if (t.key !== 'tags') setTagPreset(null); }}
+                onClick={() => setTab(t.key)}
               >
                 <i className={`fa ${t.icon} me-2`} />{t.label}
                 {t.key === 'issues' && openIssues > 0 && (
@@ -141,9 +164,9 @@ const TagManagement = () => {
           {tab === 'overview' && (
             <OverviewTab summary={summary} types={types} stockAlerts={stockAlerts} companies={companies} onOpenTag={setOpenTag} />
           )}
-          {tab === 'batches' && <BatchesTab {...shared} onShowTags={showTags} />}
+          {tab === 'batches' && isAdmin && <BatchesTab {...shared} onShowTags={showTags} />}
           {tab === 'allocations' && <AllocationsTab {...shared} onShowTags={showTags} />}
-          {tab === 'tags' && <TagsTab {...shared} preset={tagPreset} onClearPreset={() => setTagPreset(null)} />}
+          {tab === 'tags' && <TagsTab {...shared} />}
           {tab === 'balances' && <BalancesTab {...shared} stockAlerts={stockAlerts} />}
           {tab === 'issues' && <IssuesTab {...shared} />}
           {tab === 'events' && isAdmin && <EventsTab {...shared} />}

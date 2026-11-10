@@ -3,9 +3,25 @@ import { Modal } from 'react-bootstrap';
 import { toast } from 'react-toastify';
 import { tagApi, errorMessage } from './api';
 import {
-  CompanySelect, Field, Pagination, PAGE_SIZE, RangeLabel, StatusBadge, TableMessage, TypeSelect, UNCLASSIFIED_CODE,
+  CompanySelect, Field, Pagination, RangeLabel, StatusBadge, TableMessage, TypeSelect, UNCLASSIFIED_CODE,
   formatDate, formatNumber,
 } from './shared';
+import {
+  DateRangeFilter, ExportButtons, FilterPanel, MultiSelect, PageSize, SelectFilter, SortTh, TextFilter, TotalsBar,
+  resolveRange, toQuery, useUrlFilters,
+} from './reports';
+
+const ALLOCATION_DEFAULTS = {
+  page: '1', limit: '25', sort: '', dir: 'desc',
+  companyId: '', tagTypeId: '', status: '', range: '', from: '', to: '',
+  assignedBy: '', usage: '', slow: '', batchId: '',
+};
+const STATUS_OPTIONS = [{ value: 'ACTIVE', label: 'Active' }, { value: 'RETURNED', label: 'Returned' }];
+const USAGE_OPTIONS = [
+  ['', 'Any usage'], ['unused', 'Not used yet'], ['partial', 'Partly used'], ['remaining', 'Has unused tags'], ['full', 'Nothing left'],
+];
+// Slow moving = given at least N days ago, still has unused tags, and at most 10% used
+const SLOW_OPTIONS = [['', 'All allocations'], ['30', 'Given 30+ days ago, ≤10% used'], ['60', 'Given 60+ days ago, ≤10% used'], ['90', 'Given 90+ days ago, ≤10% used']];
 
 const AssignTagsModal = ({ show, types, companies, onClose, onAssigned }) => {
   const [companyId, setCompanyId] = useState('');
@@ -247,77 +263,126 @@ const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
 const AllocationsTab = ({ types, companies: allCompanies, isAdmin, onChanged, onShowTags, refreshKey }) => {
   // Tags are only allocated to DRC companies
   const companies = useMemo(() => allCompanies.filter((c) => String(c.country || '').trim().toUpperCase() === 'DRC'), [allCompanies]);
-  const [filters, setFilters] = useState({ companyId: '', tagTypeId: '', status: '' });
-  const [page, setPage] = useState(1);
-  const [data, setData] = useState({ items: [], total: 0, page: 1, limit: PAGE_SIZE });
+  const [filters, setFilters, clearFilters, active] = useUrlFilters('alloc', ALLOCATION_DEFAULTS);
+  const [data, setData] = useState({ items: [], total: 0, page: 1, limit: 25, totals: {} });
   const [loading, setLoading] = useState(true);
   const [showAssign, setShowAssign] = useState(false);
   const [toReturn, setToReturn] = useState(null);
 
+  const given = resolveRange(filters.range, filters.from, filters.to);
+  const query = {
+    ...toQuery(filters, ['range', 'from', 'to', 'slow']),
+    from: given.from,
+    to: given.to,
+    ...(filters.slow ? { staleDays: filters.slow, maxUsedPct: 10 } : {}),
+  };
+  const queryKey = JSON.stringify(query);
+
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setData(await tagApi.listAllocations({ ...filters, page, limit: PAGE_SIZE }));
+      setData(await tagApi.listAllocations(JSON.parse(queryKey)));
     } catch (err) {
       toast.error(errorMessage(err));
     } finally {
       setLoading(false);
     }
-  }, [filters, page]);
+  }, [queryKey]);
 
-  useEffect(() => { load(); }, [load, refreshKey]);
+  useEffect(() => {
+    const timer = setTimeout(load, 300);
+    return () => clearTimeout(timer);
+  }, [load, refreshKey]);
 
-  const setFilter = (patch) => { setFilters((prev) => ({ ...prev, ...patch })); setPage(1); };
   const afterChange = () => { load(); onChanged(); };
+  const sortProps = { filters, onSort: setFilters };
+  const companyOptions = (isAdmin ? companies : allCompanies).map((c) => ({ value: c.id, label: c.name || c.id }));
+  const typeOptions = types.map((t) => ({ value: String(t.id), label: t.name }));
 
   return (
     <div className="card">
       <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
         <h4 className="card-title mb-0">Allocations</h4>
-        {isAdmin && (
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowAssign(true)}>
-            <i className="fa fa-share me-2" />Assign tags
-          </button>
-        )}
+        <div className="d-flex gap-2 flex-wrap">
+          <ExportButtons report="allocations" params={query} disabled={data.total === 0} />
+          {isAdmin && (
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowAssign(true)}>
+              <i className="fa fa-share me-2" />Assign tags
+            </button>
+          )}
+        </div>
       </div>
       <div className="card-body">
-        <div className="row mb-3">
-          <div className="col-md-5 mb-2">
-            <CompanySelect companies={companies} value={filters.companyId} onChange={(v) => setFilter({ companyId: v })} isClearable placeholder="All companies" />
+        {filters.batchId && (
+          <div className="alert alert-info d-flex justify-content-between align-items-center py-2">
+            <span>Showing allocations of batch #{filters.batchId}</span>
+            <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setFilters({ batchId: '' })}>Show all</button>
           </div>
-          <div className="col-md-4 mb-2">
-            <TypeSelect types={types} value={filters.tagTypeId} onChange={(v) => setFilter({ tagTypeId: v })} allLabel="All tag types" />
+        )}
+        <FilterPanel
+          active={active}
+          onClear={clearFilters}
+          more={(
+            <>
+              <div className="col-md-3">
+                <SelectFilter label="Usage" value={filters.usage} onChange={(v) => setFilters({ usage: v })} options={USAGE_OPTIONS} />
+              </div>
+              <div className="col-md-3">
+                <SelectFilter label="Slow moving" value={filters.slow} onChange={(v) => setFilters({ slow: v })} options={SLOW_OPTIONS} />
+              </div>
+              <div className="col-md-3">
+                <TextFilter label="Given by" value={filters.assignedBy} onChange={(v) => setFilters({ assignedBy: v })} placeholder="Starts with…" />
+              </div>
+            </>
+          )}
+        >
+          <div className="col-md-3">
+            <MultiSelect label="Company" options={companyOptions} value={filters.companyId} onChange={(v) => setFilters({ companyId: v })} placeholder="All companies" />
           </div>
-          <div className="col-md-3 mb-2">
-            <select className="form-control" value={filters.status} onChange={(e) => setFilter({ status: e.target.value })}>
-              <option value="">All statuses</option>
-              <option value="ACTIVE">Active</option>
-              <option value="RETURNED">Returned</option>
-            </select>
+          <div className="col-md-3">
+            <MultiSelect label="Tag type" options={typeOptions} value={filters.tagTypeId} onChange={(v) => setFilters({ tagTypeId: v })} placeholder="All types" />
           </div>
-        </div>
+          <div className="col-md-3">
+            <MultiSelect label="Status" options={STATUS_OPTIONS} value={filters.status} onChange={(v) => setFilters({ status: v })} placeholder="All statuses" />
+          </div>
+          <div className="col-md-3">
+            <DateRangeFilter label="Date given" value={{ range: filters.range, from: filters.from, to: filters.to }}
+              onChange={(v) => setFilters({ range: v.range, from: v.from, to: v.to })} />
+          </div>
+        </FilterPanel>
+
+        <TotalsBar items={[
+          ['Allocations', data.total],
+          ['Tags given', data.totals?.quantity || 0],
+          ['Remaining', data.totals?.remaining || 0, '#38bdf8'],
+          ['Used', data.totals?.used || 0, '#a78bfa'],
+          ['Void', data.totals?.void || 0, '#f87171'],
+          ['Returned', data.totals?.returned || 0, '#fbbf24'],
+        ]} />
 
         <div className="table-responsive">
           <table className="table">
             <thead>
               <tr>
-                <th>Allocation</th>
-                <th>Company</th>
-                <th>Type</th>
+                <SortTh label="Allocation" sortKey="allocationCode" {...sortProps} />
+                <SortTh label="Company" sortKey="companyName" {...sortProps} />
+                <SortTh label="Type" sortKey="tagTypeName" {...sortProps} />
                 <th>Range</th>
-                <th>Qty</th>
-                <th>Remaining</th>
-                <th>Used</th>
+                <SortTh label="Qty" sortKey="quantity" {...sortProps} />
+                <SortTh label="Remaining" sortKey="remainingCount" {...sortProps} />
+                <SortTh label="Used" sortKey="usedCount" {...sortProps} />
+                <SortTh label="% used" sortKey="usedPct" {...sortProps} style={{ minWidth: 140 }} />
                 <th>Void</th>
                 <th>Returned</th>
+                <SortTh label="Last used" sortKey="lastUsedAt" {...sortProps} />
                 <th>Status</th>
-                <th>Assigned</th>
+                <SortTh label="Given" sortKey="assignedAt" {...sortProps} />
                 <th className="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
-              {loading && data.items.length === 0 && <TableMessage colSpan={12} loading />}
-              {!loading && data.items.length === 0 && <TableMessage colSpan={12}>No allocations found</TableMessage>}
+              {loading && data.items.length === 0 && <TableMessage colSpan={14} loading />}
+              {!loading && data.items.length === 0 && <TableMessage colSpan={14}>No allocations match these filters</TableMessage>}
               {data.items.map((a) => (
                 <tr key={a.id}>
                   <td className="fw-bold">{a.allocationCode}</td>
@@ -327,10 +392,21 @@ const AllocationsTab = ({ types, companies: allCompanies, isAdmin, onChanged, on
                   <td>{formatNumber(a.quantity)}</td>
                   <td>{formatNumber(a.remainingCount)}</td>
                   <td>{formatNumber(a.usedCount)}</td>
+                  <td>
+                    <div className="d-flex align-items-center gap-2">
+                      <div style={{ flex: 1, height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3 }}>
+                        <div style={{ width: `${a.usedPct}%`, height: '100%', background: '#a78bfa', borderRadius: 3 }} />
+                      </div>
+                      <small className="text-muted">{a.usedPct}%</small>
+                    </div>
+                  </td>
                   <td>{formatNumber(a.voidCount)}</td>
                   <td>{formatNumber(a.returnedQuantity)}</td>
+                  <td className="text-nowrap"><small>{a.lastUsedAt ? formatDate(a.lastUsedAt) : 'Never'}</small></td>
                   <td><StatusBadge status={a.status} /></td>
-                  <td className="text-nowrap"><small>{formatDate(a.assignedAt)}<br /><span className="text-muted">{a.assignedBy}</span></small></td>
+                  <td className="text-nowrap">
+                    <small>{formatDate(a.assignedAt)}<br /><span className="text-muted">{a.daysSinceAssigned} days ago · {a.assignedBy}</span></small>
+                  </td>
                   <td className="text-end text-nowrap">
                     <button type="button" className="btn btn-sm btn-outline-primary me-1" onClick={() => onShowTags({ allocationId: a.id })}>Tags</button>
                     {isAdmin && a.remainingCount > 0 && (
@@ -342,7 +418,12 @@ const AllocationsTab = ({ types, companies: allCompanies, isAdmin, onChanged, on
             </tbody>
           </table>
         </div>
-        <Pagination page={data.page} limit={data.limit} total={data.total} onChange={setPage} />
+        <div className="d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <PageSize value={filters.limit} onChange={(v) => setFilters({ limit: v })} />
+          <div className="flex-grow-1">
+            <Pagination page={data.page} limit={data.limit} total={data.total} onChange={(p) => setFilters({ page: String(p) })} />
+          </div>
+        </div>
       </div>
 
       <AssignTagsModal

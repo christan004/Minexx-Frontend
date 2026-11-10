@@ -58,5 +58,24 @@ export const tagApi = {
   resolveUseFailure: (id, note) => post(`use-failures/${id}/resolve`, { note }),
 
   balances: (filters) => get('balances', clean(filters)),
+  stockMovement: (filters) => get('balances/movement', clean(filters)),
+  usageTrend: (filters) => get('balances/trend', clean(filters)),
+  lookupTags: (codes) => post('tags/lookup', { codes }),
+
+  /** Download every row of a report matching `filters` as CSV or Excel. */
+  exportReport: async (report, filters, format) => {
+    const response = await axiosInstance.get(`${BASE}/export/${report}`, {
+      params: { ...clean(filters), format },
+      responseType: 'blob',
+    });
+    const url = URL.createObjectURL(response.data);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `tag-${report}-${new Date().toISOString().slice(0, 10)}.${format}`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+  },
   events: (filters) => get('events', clean(filters)),
 };
