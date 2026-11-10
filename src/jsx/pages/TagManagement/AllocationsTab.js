@@ -4,7 +4,7 @@ import { toast } from 'react-toastify';
 import { tagApi, errorMessage } from './api';
 import {
   CompanySelect, Field, Pagination, RangeLabel, StatusBadge, TableMessage, TypeSelect, UNCLASSIFIED_CODE,
-  formatDate, formatNumber,
+  formatDate, formatNumber, parseCodeList,
 } from './shared';
 import {
   DateRangeFilter, ExportButtons, FilterPanel, MultiSelect, PageSize, SelectFilter, SortTh, TextFilter, TotalsBar,
@@ -172,10 +172,83 @@ const AssignTagsModal = ({ show, types, companies, onClose, onAssigned }) => {
   );
 };
 
+/** Search the allocation's unused tags and tick the ones to return (or paste codes). */
+const ChooseTags = ({ allocation, chosen, setChosen, pasted, setPasted }) => {
+  const [search, setSearch] = useState('');
+  const [results, setResults] = useState({ items: [], total: 0 });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!allocation) return undefined;
+    setLoading(true);
+    const timer = setTimeout(() => {
+      tagApi.listTags({ allocationId: allocation.id, status: 'ASSIGNED', search: search.trim(), sort: 'tagCode', dir: 'asc', limit: 50 })
+        .then(setResults)
+        .catch((err) => toast.error(errorMessage(err)))
+        .finally(() => setLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [allocation, search]);
+
+  const toggle = (code) => setChosen((prev) => (prev.includes(code) ? prev.filter((c) => c !== code) : [...prev, code]));
+  const shown = results.items.map((t) => t.tagCode);
+  const allShown = shown.length > 0 && shown.every((c) => chosen.includes(c));
+  const toggleShown = () => setChosen((prev) => (allShown ? prev.filter((c) => !shown.includes(c)) : [...new Set([...prev, ...shown])]));
+
+  return (
+    <>
+      <Field label="Search unused tags of this allocation" hint={`${formatNumber(results.total)} unused tag(s) match. Showing up to 50.`}>
+        <input className="form-control" value={search} placeholder="Tag code starts with…" onChange={(ev) => setSearch(ev.target.value)} />
+      </Field>
+      <div className="table-responsive mb-3" style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid #2a3a4a', borderRadius: 6 }}>
+        <table className="table table-sm mb-0">
+          <thead>
+            <tr>
+              <th style={{ width: 36 }}>
+                <input type="checkbox" checked={allShown} onChange={toggleShown} disabled={shown.length === 0} aria-label="Select all shown" />
+              </th>
+              <th>Tag code</th>
+              <th>Type</th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading && <TableMessage colSpan={3} loading />}
+            {!loading && results.items.length === 0 && <TableMessage colSpan={3}>No unused tags match</TableMessage>}
+            {!loading && results.items.map((t) => (
+              <tr key={t.id} onClick={() => toggle(t.tagCode)} style={{ cursor: 'pointer' }}>
+                <td><input type="checkbox" checked={chosen.includes(t.tagCode)} onChange={() => toggle(t.tagCode)} onClick={(ev) => ev.stopPropagation()} aria-label={`Return ${t.tagCode}`} /></td>
+                <td style={{ fontFamily: 'monospace' }}>{t.tagCode}</td>
+                <td>{t.tagTypeName}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {chosen.length > 0 && (
+        <div className="mb-3">
+          <small className="text-muted">Chosen ({chosen.length}): </small>
+          {chosen.slice(0, 30).map((code) => (
+            <span key={code} className="badge light badge-info me-1 mb-1" style={{ fontFamily: 'monospace', cursor: 'pointer' }} onClick={() => toggle(code)} title="Click to remove">
+              {code} ✕
+            </span>
+          ))}
+          {chosen.length > 30 && <small className="text-muted">… and {chosen.length - 30} more</small>}
+          <button type="button" className="btn btn-link btn-sm p-0 ms-2" onClick={() => setChosen([])}>Clear</button>
+        </div>
+      )}
+      <Field label="Or paste tag codes" hint="One per line, or separated by commas or spaces">
+        <textarea className="form-control" rows={3} value={pasted} style={{ fontFamily: 'monospace' }} onChange={(ev) => setPasted(ev.target.value)} />
+      </Field>
+    </>
+  );
+};
+
 const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
   const [mode, setMode] = useState('all');
   const [startNo, setStartNo] = useState('');
   const [endNo, setEndNo] = useState('');
+  const [chosen, setChosen] = useState([]);
+  const [pasted, setPasted] = useState('');
   const [reason, setReason] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -185,6 +258,8 @@ const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
     setMode('all');
     setStartNo(String(allocation.startNo));
     setEndNo(String(allocation.endNo));
+    setChosen([]);
+    setPasted('');
     setReason('');
     setError(null);
   }, [allocation]);
@@ -192,6 +267,7 @@ const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
   const s = Number(startNo);
   const e = Number(endNo);
   const rangeValid = allocation && s >= allocation.startNo && e <= allocation.endNo && e >= s;
+  const tagCodes = [...new Set([...chosen, ...parseCodeList(pasted)])];
 
   const submit = async () => {
     setSaving(true);
@@ -199,9 +275,14 @@ const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
     try {
       const result = await tagApi.returnTags(allocation.id, {
         ...(mode === 'range' ? { startNo: s, endNo: e } : {}),
+        ...(mode === 'choose' ? { tagCodes } : {}),
         reason: reason.trim(),
       });
       toast.success(`${formatNumber(result.returned)} unused tags returned to stock from ${result.allocationCode}`);
+      const skipped = [...(result.notInAllocation || []), ...(result.notUnused || [])];
+      if (skipped.length > 0) {
+        toast.warning(`Not returned (not unused tags of this allocation): ${skipped.slice(0, 10).join(', ')}${skipped.length > 10 ? ` and ${skipped.length - 10} more` : ''}`);
+      }
       onReturned();
     } catch (err) {
       setError(errorMessage(err));
@@ -211,7 +292,7 @@ const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
   };
 
   return (
-    <Modal show={Boolean(allocation)} onHide={() => !saving && onClose()} centered>
+    <Modal show={Boolean(allocation)} onHide={() => !saving && onClose()} centered size={mode === 'choose' ? 'lg' : undefined}>
       <Modal.Header closeButton>
         <Modal.Title>Return tags — {allocation?.allocationCode}</Modal.Title>
       </Modal.Header>
@@ -225,8 +306,12 @@ const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
           <select className="form-control" value={mode} onChange={(ev) => setMode(ev.target.value)}>
             <option value="all">All unused tags</option>
             <option value="range">Only a range</option>
+            <option value="choose">Choose tags (search or paste)</option>
           </select>
         </Field>
+        {mode === 'choose' && (
+          <ChooseTags allocation={allocation} chosen={chosen} setChosen={setChosen} pasted={pasted} setPasted={setPasted} />
+        )}
         {mode === 'range' && (
           <div className="row">
             <div className="col-6">
@@ -252,8 +337,13 @@ const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
       </Modal.Body>
       <Modal.Footer>
         <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>Cancel</button>
-        <button type="button" className="btn btn-warning" onClick={submit} disabled={saving || (mode === 'range' && !rangeValid)}>
-          {saving ? 'Returning…' : 'Return to stock'}
+        <button
+          type="button"
+          className="btn btn-warning"
+          onClick={submit}
+          disabled={saving || (mode === 'range' && !rangeValid) || (mode === 'choose' && tagCodes.length === 0)}
+        >
+          {saving ? 'Returning…' : mode === 'choose' ? `Return ${formatNumber(tagCodes.length)} tag(s)` : 'Return to stock'}
         </button>
       </Modal.Footer>
     </Modal>
