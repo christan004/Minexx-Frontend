@@ -34,9 +34,8 @@ export const tagApi = {
     del(`company-minimums/${encodeURIComponent(companyId)}/${tagTypeId}`),
   stockAlerts: () => get('stock-alerts'),
 
-  // Low stock e-mails (admin): status, test, check now, log
+  // Low stock e-mails (admin): status, check now, log
   emailStatus: () => get('notifications/email-status'),
-  sendTestEmail: (to) => post('notifications/test-email', { to }),
   checkLowStock: () => post('notifications/check'),
   emailLog: (filters) => get('notifications/email-log', clean(filters)),
 

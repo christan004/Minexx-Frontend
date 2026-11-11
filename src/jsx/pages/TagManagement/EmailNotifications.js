@@ -1,7 +1,7 @@
 /**
- * Settings → Email notifications (admins): is e-mail set up on the server, send a test e-mail,
+ * Settings → Email notifications (admins): is e-mail set up on the server,
  * check low stock now, and the log of every e-mail sent.
- * Low stock e-mails go out by themselves after each change and every 15 minutes; this card only shows and tests.
+ * Low stock e-mails go out by themselves after each change and every 15 minutes; this card only shows them.
  */
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
@@ -9,16 +9,8 @@ import { tagApi, errorMessage } from './api';
 import { Pagination, TableMessage, formatDate } from './shared';
 import { tr } from './i18n';
 
-const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-const myEmail = () => {
-  try { return JSON.parse(localStorage.getItem('_authUsr'))?.email || ''; } catch (e) { return ''; }
-};
-
 const EmailNotifications = ({ refreshKey }) => {
   const [status, setStatus] = useState(null);
-  const [to, setTo] = useState(myEmail());
-  const [sending, setSending] = useState(false);
   const [checking, setChecking] = useState(false);
   const [log, setLog] = useState({ items: [], total: 0, page: 1, limit: 10 });
   const [page, setPage] = useState(1);
@@ -35,20 +27,6 @@ const EmailNotifications = ({ refreshKey }) => {
 
   useEffect(() => { tagApi.emailStatus().then(setStatus).catch(() => setStatus({ configured: false })); }, [refreshKey]);
   useEffect(loadLog, [page, refreshKey]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const sendTest = async () => {
-    setSending(true);
-    try {
-      await tagApi.sendTestEmail(to.trim());
-      toast.success(tr('Test e-mail sent to {to}. Check the inbox (and spam).', { to: to.trim() }));
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setSending(false);
-      setPage(1);
-      loadLog();
-    }
-  };
 
   const checkNow = async () => {
     setChecking(true);
@@ -88,15 +66,6 @@ const EmailNotifications = ({ refreshKey }) => {
         ))}
 
         <div className="row g-2 align-items-end mb-3">
-          <div className="col-md-5">
-            <label className="form-label mb-1"><small className="text-muted">{tr('Send a test e-mail to')}</small></label>
-            <input type="email" className="form-control" value={to} onChange={(e) => setTo(e.target.value)} placeholder="name@example.com" />
-          </div>
-          <div className="col-md-3">
-            <button type="button" className="btn btn-primary w-100" disabled={!status?.configured || !EMAIL.test(to.trim()) || sending} onClick={sendTest}>
-              <i className="fa fa-paper-plane me-2" />{sending ? tr('Sending…') : tr('Send test e-mail')}
-            </button>
-          </div>
           <div className="col-md-4">
             <button type="button" className="btn btn-outline-primary w-100" disabled={checking} onClick={checkNow}
               title={tr('E-mails new low stock alerts now instead of waiting for the next automatic check')}>
