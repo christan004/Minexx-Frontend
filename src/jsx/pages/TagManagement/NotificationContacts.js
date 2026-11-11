@@ -2,6 +2,7 @@
  * Settings: who is told when tag stock reaches its minimum.
  * - Minexx recipients (SYSTEM): receive every low stock alert.
  * - Company contacts (COMPANY): a company's representative or person in charge; receive that company's alerts.
+ * A contact can have several emails (the first one is the main email); all of them get the alerts.
  * Emails are not sent yet; the list is ready for when email is configured.
  */
 import React, { useEffect, useState } from 'react';
@@ -12,7 +13,12 @@ import { CompanySelect, Field, TableMessage, formatDate } from './shared';
 const ROLES = ['Representative', 'In charge', 'Manager', 'Other'];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const emptyForm = (scope) => ({ id: null, scope, companyId: '', name: '', email: '', role: scope === 'COMPANY' ? 'Representative' : '', notifyLowStock: true });
+const MAX_EMAILS = 10;
+
+/** All emails of a contact, main first (older API answers only have `email`). */
+const contactEmails = (row) => (row.emails && row.emails.length ? row.emails : [row.email]).filter(Boolean);
+
+const emptyForm = (scope) => ({ id: null, scope, companyId: '', name: '', emails: [''], role: scope === 'COMPANY' ? 'Representative' : '', notifyLowStock: true });
 
 /** One card: add/edit form + list, for Minexx recipients or company contacts. */
 const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
@@ -33,17 +39,30 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
 
   const set = (patch) => setForm((prev) => ({ ...prev, ...patch }));
   const isCompany = scope === 'COMPANY';
-  const emailOk = EMAIL.test(form.email.trim());
-  const canSave = form.name.trim().length >= 2 && emailOk && (!isCompany || form.companyId) && !saving;
+  const filled = form.emails.map((e) => e.trim()).filter(Boolean);
+  const badEmail = (e) => e.trim() !== '' && !EMAIL.test(e.trim());
+  const repeated = (e, i) => e.trim() !== ''
+    && form.emails.findIndex((x) => x.trim().toLowerCase() === e.trim().toLowerCase()) !== i;
+  const emailsOk = filled.length > 0 && form.emails.every((e, i) => !badEmail(e) && !repeated(e, i));
+  const canSave = form.name.trim().length >= 2 && emailsOk && (!isCompany || form.companyId) && !saving;
 
-  const body = (f) => ({
-    scope,
-    ...(isCompany ? { companyId: f.companyId } : {}),
-    name: f.name.trim(),
-    email: f.email.trim(),
-    ...(f.role ? { role: f.role } : {}),
-    notifyLowStock: f.notifyLowStock,
-  });
+  const setEmail = (i, value) => set({ emails: form.emails.map((e, j) => (j === i ? value : e)) });
+  const addEmail = () => set({ emails: [...form.emails, ''] });
+  const removeEmail = (i) => set({ emails: form.emails.filter((_, j) => j !== i) });
+
+  // The first filled email is the main one; the others go in extraEmails
+  const body = (f) => {
+    const [email, ...extraEmails] = f.emails.map((e) => e.trim()).filter(Boolean);
+    return {
+      scope,
+      ...(isCompany ? { companyId: f.companyId } : {}),
+      name: f.name.trim(),
+      email,
+      extraEmails,
+      ...(f.role ? { role: f.role } : {}),
+      notifyLowStock: f.notifyLowStock,
+    };
+  };
 
   const save = async () => {
     setSaving(true);
@@ -62,7 +81,7 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
 
   const toggleAlerts = async (row) => {
     try {
-      await tagApi.updateNotificationContact(row.id, body({ ...row, notifyLowStock: !row.notifyLowStock }));
+      await tagApi.updateNotificationContact(row.id, body({ ...row, emails: contactEmails(row), notifyLowStock: !row.notifyLowStock }));
       load();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -70,7 +89,7 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
   };
 
   const remove = async (row) => {
-    if (!window.confirm(`Remove ${row.name} (${row.email})?`)) return;
+    if (!window.confirm(`Remove ${row.name} (${contactEmails(row).join(', ')})?`)) return;
     try {
       await tagApi.removeNotificationContact(row.id);
       toast.success('Contact removed');
@@ -82,7 +101,7 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
   };
 
   const edit = (row) => setForm({
-    id: row.id, scope, companyId: row.companyId || '', name: row.name, email: row.email, role: row.role || '', notifyLowStock: row.notifyLowStock,
+    id: row.id, scope, companyId: row.companyId || '', name: row.name, emails: contactEmails(row), role: row.role || '', notifyLowStock: row.notifyLowStock,
   });
 
   return (
@@ -92,7 +111,7 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
       </div>
       <div className="card-body">
         <p className="text-muted">{intro}</p>
-        <div className="row align-items-end">
+        <div className="row align-items-start">
           {isCompany && (
             <div className="col-md-3">
               <Field label="Company">
@@ -106,8 +125,28 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
             </Field>
           </div>
           <div className="col-md-3">
-            <Field label="Email" hint={form.email && !emailOk ? 'Enter a valid email address' : null}>
-              <input type="email" className="form-control" maxLength={150} value={form.email} onChange={(e) => set({ email: e.target.value })} placeholder="name@example.com" />
+            <Field label={form.emails.length > 1 ? 'Emails' : 'Email'}>
+              {form.emails.map((value, i) => (
+                <div key={i} className={i ? 'mt-2' : ''}>
+                  <div className="d-flex align-items-center gap-1">
+                    <input type="email" className="form-control" maxLength={150} value={value}
+                      onChange={(e) => setEmail(i, e.target.value)}
+                      placeholder={i ? 'another@example.com' : 'name@example.com'} aria-label={`Email ${i + 1}`} />
+                    {form.emails.length > 1 && (
+                      <button type="button" className="btn btn-link btn-sm text-danger p-0" title="Remove this email" onClick={() => removeEmail(i)}>
+                        <i className="fa fa-times" />
+                      </button>
+                    )}
+                  </div>
+                  {badEmail(value) && <small className="text-danger">Enter a valid email address</small>}
+                  {!badEmail(value) && repeated(value, i) && <small className="text-danger">This email is already in the list</small>}
+                </div>
+              ))}
+              {form.emails.length < MAX_EMAILS && (
+                <button type="button" className="btn btn-link btn-sm p-0 mt-1" onClick={addEmail}>
+                  <i className="fa fa-plus me-1" />Add another email
+                </button>
+              )}
             </Field>
           </div>
           <div className="col-md-2">
@@ -118,7 +157,7 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
               </select>
             </Field>
           </div>
-          <div className={isCompany ? 'col-md-2' : 'col-md-4'}>
+          <div className={`${isCompany ? 'col-md-2' : 'col-md-4'} pt-md-4`}>
             <div className="form-check mb-2">
               <input id={`notify-${scope}`} type="checkbox" className="form-check-input" checked={form.notifyLowStock}
                 onChange={(e) => set({ notifyLowStock: e.target.checked })} />
@@ -161,7 +200,14 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
                 <tr key={row.id}>
                   {isCompany && <td>{row.companyName || row.companyId}</td>}
                   <td className="fw-bold">{row.name}</td>
-                  <td><a href={`mailto:${row.email}`}>{row.email}</a></td>
+                  <td>
+                    {contactEmails(row).map((email, i, all) => (
+                      <div key={email}>
+                        <a href={`mailto:${email}`}>{email}</a>
+                        {i === 0 && all.length > 1 && <small className="text-muted ms-1">(main)</small>}
+                      </div>
+                    ))}
+                  </td>
                   <td>{row.role || '—'}</td>
                   <td>
                     <button type="button" className={`btn btn-xs btn-sm ${row.notifyLowStock ? 'btn-success' : 'btn-outline-secondary'}`} onClick={() => toggleAlerts(row)}
@@ -200,7 +246,7 @@ const NotificationContacts = ({ companies, refreshKey }) => (
     <ContactsCard
       scope="COMPANY"
       title="Company contacts"
-      intro="A company’s representative or person in charge. They receive the low stock alerts of their own company. A company can have several contacts."
+      intro="A company’s representative or person in charge. They receive the low stock alerts of their own company. A company can have several contacts, and each contact can have several emails."
       companies={companies}
       refreshKey={refreshKey}
     />
