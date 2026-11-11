@@ -1,6 +1,7 @@
 /**
  * Balances: three reports on companies' tag stock.
  * - Current balance: given, used, void, remaining, minimum, average use per month, months left.
+ *   Click a row (or a number) to see the tags behind it.
  * - Stock movement: opening + received - used - void - returned (+/- reclassified) = closing, for a period.
  * - Monthly trend: tags received and used per month (chart).
  * Company users only see their own companies (the API limits it).
@@ -13,6 +14,7 @@ import {
 import moment from 'moment';
 import { tagApi, errorMessage } from './api';
 import { TableMessage, formatDate, formatNumber } from './shared';
+import BalanceDetailModal from './BalanceDetailModal';
 import {
   DateRangeFilter, ExportButtons, FilterPanel, MultiSelect, SelectFilter, SortTh, TotalsBar,
   resolveRange, toQuery, useUrlFilters,
@@ -36,9 +38,19 @@ const nameOf = (row) => row.companyName || row.companyId || 'All companies';
 
 /* ── Current balance ─────────────────────────────────── */
 
-const CurrentBalance = ({ filters, setFilters, refreshKey }) => {
+// A number that opens the detail on its own list (the row click opens "Given")
+const CountLink = ({ value, onClick, bold }) => (
+  <button type="button" className={`btn btn-link p-0 text-reset ${bold ? 'fw-bold' : ''}`} style={{ textDecoration: 'underline dotted' }}
+    onClick={(e) => { e.stopPropagation(); onClick(); }} disabled={!value}>
+    {formatNumber(value)}
+  </button>
+);
+
+const CurrentBalance = ({ filters, setFilters, refreshKey, onOpenTag }) => {
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [detail, setDetail] = useState(null); // { row, view }
+  const open = (row, view = 'given') => setDetail({ row, view });
   const query = toQuery({
     companyId: filters.companyId, tagTypeId: filters.tagTypeId, groupBy: filters.groupBy,
     lowOnly: filters.lowOnly, sort: filters.sort, dir: filters.dir,
@@ -92,14 +104,15 @@ const CurrentBalance = ({ filters, setFilters, refreshKey }) => {
               <TableMessage colSpan={showCompany ? 11 : 10} loading={loading}>No tags have been given to companies for these filters</TableMessage>
             )}
             {!loading && rows.map((r) => (
-              <tr key={`${r.companyId}-${r.tagTypeId}`} style={r.low ? { background: 'rgba(239,68,68,0.12)' } : undefined}>
-                {showCompany && <td>{nameOf(r)}</td>}
-                <td>{r.tagTypeName}</td>
-                <td>{formatNumber(r.assignedTotal)}</td>
-                <td>{formatNumber(r.usedCount)}</td>
-                <td>{formatNumber(r.voidCount)}</td>
-                <td className="fw-bold">
-                  {formatNumber(r.remainingCount)}
+              <tr key={`${r.companyId}-${r.tagTypeId}`} onClick={() => open(r)} title="Click to see the tags"
+                style={{ cursor: 'pointer', ...(r.low ? { background: 'rgba(239,68,68,0.12)' } : {}) }}>
+                {showCompany && <td className="text-primary">{nameOf(r)} <i className="fa fa-search ms-1" style={{ fontSize: 11, opacity: 0.6 }} /></td>}
+                <td>{r.tagTypeName || '—'}</td>
+                <td><CountLink value={r.assignedTotal} onClick={() => open(r, 'given')} /></td>
+                <td><CountLink value={r.usedCount} onClick={() => open(r, 'used')} /></td>
+                <td><CountLink value={r.voidCount} onClick={() => open(r, 'void')} /></td>
+                <td>
+                  <CountLink value={r.remainingCount} onClick={() => open(r, 'remaining')} bold />
                   {r.low && <span className="badge badge-danger ms-2">Low</span>}
                 </td>
                 <td>{r.minimum ? formatNumber(r.minimum) : '—'}</td>
@@ -117,7 +130,10 @@ const CurrentBalance = ({ filters, setFilters, refreshKey }) => {
           </tbody>
         </table>
       </div>
-      <small className="text-muted">Average use is measured over the last 3 months. Months left = remaining ÷ average use per month.</small>
+      <small className="text-muted">
+        Click a company to see its tags, or click a number to see those tags. Average use is measured over the last 3 months. Months left = remaining ÷ average use per month.
+      </small>
+      <BalanceDetailModal row={detail?.row} initialView={detail?.view} onClose={() => setDetail(null)} onOpenTag={onOpenTag} />
     </>
   );
 };
@@ -273,7 +289,7 @@ const MonthlyTrend = ({ filters, refreshKey }) => {
 
 /* ── Tab ─────────────────────────────────────────────── */
 
-const BalancesTab = ({ types, companies, refreshKey }) => {
+const BalancesTab = ({ types, companies, refreshKey, onOpenTag }) => {
   const [filters, setFilters, clearFilters, active] = useUrlFilters('bal', DEFAULTS, ['view']);
   const view = VIEWS.some(([key]) => key === filters.view) ? filters.view : 'current';
   const typeOptions = types.map((t) => ({ value: String(t.id), label: t.name }));
@@ -327,7 +343,7 @@ const BalancesTab = ({ types, companies, refreshKey }) => {
           )}
         </FilterPanel>
 
-        {view === 'current' && <CurrentBalance filters={filters} setFilters={setFilters} refreshKey={refreshKey} />}
+        {view === 'current' && <CurrentBalance filters={filters} setFilters={setFilters} refreshKey={refreshKey} onOpenTag={onOpenTag} />}
         {view === 'movement' && <StockMovement filters={filters} refreshKey={refreshKey} />}
         {view === 'trend' && <MonthlyTrend filters={filters} refreshKey={refreshKey} />}
       </div>
