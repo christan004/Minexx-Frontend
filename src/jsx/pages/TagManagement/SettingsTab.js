@@ -8,6 +8,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { tagApi, errorMessage } from './api';
 import { CompanySelect, Field, TableMessage, TypeSelect, UNCLASSIFIED_CODE, formatDate } from './shared';
+import NotificationContacts from './NotificationContacts';
 
 const exampleCode = (prefix, digits) => {
   const n = Number(digits) || 0;
@@ -242,6 +243,11 @@ const SettingsTab = ({ types: allTypes, companies, refreshKey, onChanged }) => {
     </div>
 
     <CompanyMinimums types={types} companies={companies} refreshKey={refreshKey} onChanged={onChanged} />
+
+    <NotificationContacts
+      companies={companies.filter((c) => String(c.country || '').trim().toUpperCase() === 'DRC')}
+      refreshKey={refreshKey}
+    />
   </>
   );
 };

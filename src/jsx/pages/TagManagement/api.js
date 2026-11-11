@@ -33,6 +33,12 @@ export const tagApi = {
     del(`company-minimums/${encodeURIComponent(companyId)}/${tagTypeId}`),
   stockAlerts: () => get('stock-alerts'),
 
+  // People to notify about low stock (SYSTEM = Minexx, COMPANY = a company's contact)
+  notificationContacts: (filters) => get('notification-contacts', clean(filters)),
+  createNotificationContact: (body) => post('notification-contacts', body),
+  updateNotificationContact: (id, body) => put(`notification-contacts/${id}`, body),
+  removeNotificationContact: (id) => del(`notification-contacts/${id}`),
+
   nextStart: (prefix) => get('batches/next-start', clean({ prefix })),
   generateBatch: (body) => post('batches', body),
   listBatches: (filters) => get('batches', clean(filters)),
