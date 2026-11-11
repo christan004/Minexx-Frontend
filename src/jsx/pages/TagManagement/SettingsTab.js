@@ -19,6 +19,7 @@ const numberInput = { width: 110 };
 
 const TypeSettingsRow = ({ type, onSaved }) => {
   const initial = () => ({
+    name: type.name || '',
     defaultPrefix: type.defaultPrefix || '',
     serialLength: type.serialLength || 0,
     minAvailable: type.minAvailable || 0,
@@ -26,22 +27,25 @@ const TypeSettingsRow = ({ type, onSaved }) => {
   });
   const [form, setForm] = useState(initial);
   const [saving, setSaving] = useState(false);
+  const [editingName, setEditingName] = useState(false);
 
-  useEffect(() => { setForm(initial()); }, [type]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setForm(initial()); setEditingName(false); }, [type]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const set = (patch) => setForm((prev) => ({ ...prev, ...patch }));
   const changed = JSON.stringify(form) !== JSON.stringify(initial());
+  const nameValid = form.name.trim().length >= 2;
 
   const save = async () => {
     setSaving(true);
     try {
       await tagApi.updateTypeSettings(type.id, {
+        name: form.name.trim(),
         defaultPrefix: form.defaultPrefix,
         serialLength: Number(form.serialLength) || 0,
         minAvailable: Number(form.minAvailable) || 0,
         companyMinDefault: Number(form.companyMinDefault) || 0,
       });
-      toast.success(`${type.name} settings saved`);
+      toast.success(`${form.name.trim()} settings saved`);
       onSaved();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -52,7 +56,27 @@ const TypeSettingsRow = ({ type, onSaved }) => {
 
   return (
     <tr>
-      <td className="fw-bold">{type.name}</td>
+      <td>
+        {editingName ? (
+          <div className="d-flex align-items-center gap-2">
+            <input className="form-control" style={{ width: 200 }} maxLength={100} value={form.name} autoFocus
+              onChange={(e) => set({ name: e.target.value })} aria-label="Tag type name" />
+            <button type="button" className="btn btn-link btn-sm p-0" title="Undo name change"
+              onClick={() => { set({ name: type.name }); setEditingName(false); }}>
+              <i className="fa fa-undo" />
+            </button>
+          </div>
+        ) : (
+          <div className="d-flex align-items-center gap-2">
+            <span className="fw-bold">{form.name}</span>
+            <button type="button" className="btn btn-outline-primary btn-xs btn-sm py-0 px-2" title="Rename this tag type" onClick={() => setEditingName(true)}>
+              <i className="fa fa-pen me-1" />Edit
+            </button>
+          </div>
+        )}
+        <small className="text-muted" style={{ fontFamily: 'monospace' }}>{type.code}</small>
+        {editingName && !nameValid && <small className="text-danger d-block">At least 2 characters</small>}
+      </td>
       <td>
         <input
           className="form-control" style={{ width: 120 }} maxLength={20} placeholder="e.g. MB"
@@ -74,7 +98,7 @@ const TypeSettingsRow = ({ type, onSaved }) => {
           value={form.companyMinDefault} onChange={(e) => set({ companyMinDefault: e.target.value })} />
       </td>
       <td>
-        <button type="button" className="btn btn-primary btn-sm" disabled={!changed || saving} onClick={save}>
+        <button type="button" className="btn btn-primary btn-sm" disabled={!changed || !nameValid || saving} onClick={save}>
           {saving ? 'Saving…' : 'Save'}
         </button>
       </td>
