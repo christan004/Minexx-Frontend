@@ -7,6 +7,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { tagApi, errorMessage } from './api';
 import { isAdminUser } from './shared';
+import { tr } from './i18n';
 import OverviewTab from './OverviewTab';
 import BatchesTab from './BatchesTab';
 import AllocationsTab from './AllocationsTab';
@@ -116,8 +117,8 @@ const TagManagement = () => {
     <>
       <div className="page-titles">
         <ol className="breadcrumb">
-          <li className="breadcrumb-item active"><Link to="/overview">Dashboard</Link></li>
-          <li className="breadcrumb-item"><Link to="/tag-management">Tag Management</Link></li>
+          <li className="breadcrumb-item active"><Link to="/overview">{tr('Dashboard')}</Link></li>
+          <li className="breadcrumb-item"><Link to="/tag-management">{tr('Tag Management')}</Link></li>
         </ol>
       </div>
 
@@ -132,12 +133,12 @@ const TagManagement = () => {
                 className={`nav-link ${tab === t.key ? 'active' : ''}`}
                 onClick={() => setTab(t.key)}
               >
-                <i className={`fa ${t.icon} me-2`} />{t.label}
+                <i className={`fa ${t.icon} me-2`} />{tr(t.label)}
                 {t.key === 'issues' && openIssues > 0 && (
-                  <span className="badge badge-danger ms-2" aria-label={`${openIssues} open issues`}>{openIssues}</span>
+                  <span className="badge badge-danger ms-2" aria-label={tr('{n} open issues', { n: openIssues })}>{openIssues}</span>
                 )}
                 {t.key === 'balances' && stockAlerts.companies.length > 0 && (
-                  <span className="badge badge-danger ms-2" aria-label={`${stockAlerts.companies.length} companies low on tags`}>
+                  <span className="badge badge-danger ms-2" aria-label={tr('{n} companies low on tags', { n: stockAlerts.companies.length })}>
                     {stockAlerts.companies.length}
                   </span>
                 )}
@@ -145,8 +146,8 @@ const TagManagement = () => {
             </li>
           ))}
         </ul>
-        <span className="badge light badge-primary" title="Switch platform from the header">
-          Platform: {platform.toUpperCase()}{isAdmin ? '' : ' · read only'}
+        <span className="badge light badge-primary" title={tr('Switch platform from the header')}>
+          {tr('Platform')}: {platform.toUpperCase()}{isAdmin ? '' : ` · ${tr('read only')}`}
         </span>
       </div>
 

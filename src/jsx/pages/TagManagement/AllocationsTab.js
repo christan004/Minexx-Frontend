@@ -10,6 +10,7 @@ import {
   DateRangeFilter, ExportButtons, FilterPanel, MultiSelect, PageSize, SelectFilter, SortTh, TextFilter, TotalsBar,
   resolveRange, toQuery, useUrlFilters,
 } from './reports';
+import { tr } from './i18n';
 
 const ALLOCATION_DEFAULTS = {
   page: '1', limit: '25', sort: '', dir: 'desc',
@@ -80,7 +81,7 @@ const AssignTagsModal = ({ show, types, companies, onClose, onAssigned }) => {
       else Object.assign(body, { batchId: range.batchId, startNo: s, endNo: e });
       const allocation = await tagApi.assignTags(body);
       toast.success(
-        `${allocation.allocationCode}: ${formatNumber(allocation.quantity)} tags (${allocation.firstTagCode} → ${allocation.lastTagCode}) assigned to ${allocation.companyName || allocation.companyId}`
+        tr('{code}: {n} tags ({first} → {last}) assigned to {company}', { code: allocation.allocationCode, n: formatNumber(allocation.quantity), first: allocation.firstTagCode, last: allocation.lastTagCode, company: allocation.companyName || allocation.companyId })
       );
       onAssigned();
     } catch (err) {
@@ -93,7 +94,7 @@ const AssignTagsModal = ({ show, types, companies, onClose, onAssigned }) => {
   return (
     <Modal show={show} onHide={() => !saving && onClose()} centered size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>Assign tags to a company</Modal.Title>
+        <Modal.Title>{tr('Assign tags to a company')}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {error && <div className="alert alert-danger">{error}</div>}
@@ -102,34 +103,34 @@ const AssignTagsModal = ({ show, types, companies, onClose, onAssigned }) => {
         </Field>
         <div className="row">
           <div className="col-md-6">
-            <Field label="Tag type" hint={`${formatNumber(totalAvailable)} available`}>
+            <Field label="Tag type" hint={tr('{n} available', { n: formatNumber(totalAvailable) })}>
               <TypeSelect types={types} value={tagTypeId} onChange={setTagTypeId} />
             </Field>
           </div>
           <div className="col-md-6">
             <Field label="How">
               <select className="form-control" value={mode} onChange={(ev) => setMode(ev.target.value)}>
-                <option value="quantity">By quantity (next free tags)</option>
-                <option value="range">Choose an exact range</option>
+                <option value="quantity">{tr('By quantity (next free tags)')}</option>
+                <option value="range">{tr('Choose an exact range')}</option>
               </select>
             </Field>
           </div>
         </div>
 
         {totalAvailable === 0 ? (
-          <div className="alert alert-warning">No tags of this type are available. Generate a batch first.</div>
+          <div className="alert alert-warning">{tr('No tags of this type are available. Generate a batch first.')}</div>
         ) : mode === 'quantity' ? (
-          <Field label="Quantity" hint={`The lowest continuous block is used. Largest free block: ${formatNumber(largestBlock)}`}>
+          <Field label="Quantity" hint={tr('The lowest continuous block is used. Largest free block: {n}', { n: formatNumber(largestBlock) })}>
             <input type="number" min={1} className="form-control" value={quantity} onChange={(ev) => setQuantity(ev.target.value)} />
           </Field>
         ) : (
           <>
             <Field label="Available range">
               <select className="form-control" value={rangeIndex} onChange={(ev) => pickRange(ev.target.value)}>
-                <option value="">Select a range…</option>
+                <option value="">{tr('Select a range…')}</option>
                 {ranges.map((r, i) => (
                   <option key={`${r.batchId}-${r.startNo}`} value={i}>
-                    {r.firstTagCode} → {r.lastTagCode} ({formatNumber(r.quantity)} tags, batch {r.batchCode})
+                    {r.firstTagCode} → {r.lastTagCode} ({tr('{n} tags, batch {batch}', { n: formatNumber(r.quantity), batch: r.batchCode })})
                   </option>
                 ))}
               </select>
@@ -149,8 +150,8 @@ const AssignTagsModal = ({ show, types, companies, onClose, onAssigned }) => {
                 <div className="col-12">
                   <div className={`alert ${rangeValid ? 'alert-info' : 'alert-warning'}`}>
                     {rangeValid
-                      ? `${formatNumber(e - s + 1)} tags will be assigned.`
-                      : `Choose numbers between ${range.startNo} and ${range.endNo}, with “To” not lower than “From”.`}
+                      ? tr('{n} tags will be assigned.', { n: formatNumber(e - s + 1) })
+                      : tr('Choose numbers between {from} and {to}, with “To” not lower than “From”.', { from: range.startNo, to: range.endNo })}
                   </div>
                 </div>
               </div>
@@ -163,9 +164,9 @@ const AssignTagsModal = ({ show, types, companies, onClose, onAssigned }) => {
         </Field>
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>Cancel</button>
+        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>{tr('Cancel')}</button>
         <button type="button" className="btn btn-primary" onClick={submit} disabled={!canSubmit}>
-          {saving ? 'Assigning…' : 'Assign tags'}
+          {saving ? tr('Assigning…') : tr('Assign tags')}
         </button>
       </Modal.Footer>
     </Modal>
@@ -197,18 +198,18 @@ const ChooseTags = ({ allocation, chosen, setChosen, pasted, setPasted }) => {
 
   return (
     <>
-      <Field label="Search unused tags of this allocation" hint={`${formatNumber(results.total)} unused tag(s) match. Showing up to 50.`}>
-        <input className="form-control" value={search} placeholder="Tag code starts with…" onChange={(ev) => setSearch(ev.target.value)} />
+      <Field label="Search unused tags of this allocation" hint={tr('{n} unused tag(s) match. Showing up to 50.', { n: formatNumber(results.total) })}>
+        <input className="form-control" value={search} placeholder={tr('Tag code starts with…')} onChange={(ev) => setSearch(ev.target.value)} />
       </Field>
       <div className="table-responsive mb-3" style={{ maxHeight: 240, overflowY: 'auto', border: '1px solid #2a3a4a', borderRadius: 6 }}>
         <table className="table table-sm mb-0">
           <thead>
             <tr>
               <th style={{ width: 36 }}>
-                <input type="checkbox" checked={allShown} onChange={toggleShown} disabled={shown.length === 0} aria-label="Select all shown" />
+                <input type="checkbox" checked={allShown} onChange={toggleShown} disabled={shown.length === 0} aria-label={tr('Select all shown')} />
               </th>
-              <th>Tag code</th>
-              <th>Type</th>
+              <th>{tr('Tag code')}</th>
+              <th>{tr('Type')}</th>
             </tr>
           </thead>
           <tbody>
@@ -216,7 +217,7 @@ const ChooseTags = ({ allocation, chosen, setChosen, pasted, setPasted }) => {
             {!loading && results.items.length === 0 && <TableMessage colSpan={3}>No unused tags match</TableMessage>}
             {!loading && results.items.map((t) => (
               <tr key={t.id} onClick={() => toggle(t.tagCode)} style={{ cursor: 'pointer' }}>
-                <td><input type="checkbox" checked={chosen.includes(t.tagCode)} onChange={() => toggle(t.tagCode)} onClick={(ev) => ev.stopPropagation()} aria-label={`Return ${t.tagCode}`} /></td>
+                <td><input type="checkbox" checked={chosen.includes(t.tagCode)} onChange={() => toggle(t.tagCode)} onClick={(ev) => ev.stopPropagation()} aria-label={tr('Return {code}', { code: t.tagCode })} /></td>
                 <td style={{ fontFamily: 'monospace' }}>{t.tagCode}</td>
                 <td>{t.tagTypeName}</td>
               </tr>
@@ -226,14 +227,14 @@ const ChooseTags = ({ allocation, chosen, setChosen, pasted, setPasted }) => {
       </div>
       {chosen.length > 0 && (
         <div className="mb-3">
-          <small className="text-muted">Chosen ({chosen.length}): </small>
+          <small className="text-muted">{tr('Chosen ({n}):', { n: chosen.length })} </small>
           {chosen.slice(0, 30).map((code) => (
-            <span key={code} className="badge light badge-info me-1 mb-1" style={{ fontFamily: 'monospace', cursor: 'pointer' }} onClick={() => toggle(code)} title="Click to remove">
+            <span key={code} className="badge light badge-info me-1 mb-1" style={{ fontFamily: 'monospace', cursor: 'pointer' }} onClick={() => toggle(code)} title={tr('Click to remove')}>
               {code} ✕
             </span>
           ))}
-          {chosen.length > 30 && <small className="text-muted">… and {chosen.length - 30} more</small>}
-          <button type="button" className="btn btn-link btn-sm p-0 ms-2" onClick={() => setChosen([])}>Clear</button>
+          {chosen.length > 30 && <small className="text-muted">{tr('… and {n} more', { n: chosen.length - 30 })}</small>}
+          <button type="button" className="btn btn-link btn-sm p-0 ms-2" onClick={() => setChosen([])}>{tr('Clear')}</button>
         </div>
       )}
       <Field label="Or paste tag codes" hint="One per line, or separated by commas or spaces">
@@ -278,10 +279,10 @@ const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
         ...(mode === 'choose' ? { tagCodes } : {}),
         reason: reason.trim(),
       });
-      toast.success(`${formatNumber(result.returned)} unused tags returned to stock from ${result.allocationCode}`);
+      toast.success(tr('{n} unused tags returned to stock from {code}', { n: formatNumber(result.returned), code: result.allocationCode }));
       const skipped = [...(result.notInAllocation || []), ...(result.notUnused || [])];
       if (skipped.length > 0) {
-        toast.warning(`Not returned (not unused tags of this allocation): ${skipped.slice(0, 10).join(', ')}${skipped.length > 10 ? ` and ${skipped.length - 10} more` : ''}`);
+        toast.warning(`${tr('Not returned (not unused tags of this allocation):')} ${skipped.slice(0, 10).join(', ')}${skipped.length > 10 ? ` ${tr('and {n} more', { n: skipped.length - 10 })}` : ''}`);
       }
       onReturned();
     } catch (err) {
@@ -294,19 +295,19 @@ const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
   return (
     <Modal show={Boolean(allocation)} onHide={() => !saving && onClose()} centered size={mode === 'choose' ? 'lg' : undefined}>
       <Modal.Header closeButton>
-        <Modal.Title>Return tags — {allocation?.allocationCode}</Modal.Title>
+        <Modal.Title>{tr('Return tags')} — {allocation?.allocationCode}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {error && <div className="alert alert-danger">{error}</div>}
         <p className="mb-3">
-          {allocation?.companyName} holds {formatNumber(allocation?.remainingCount)} unused tags in{' '}
-          <RangeLabel first={allocation?.firstTagCode} last={allocation?.lastTagCode} />. Used and void tags are never returned.
+          {tr('{company} holds {n} unused tags in', { company: allocation?.companyName || '', n: formatNumber(allocation?.remainingCount) })}{' '}
+          <RangeLabel first={allocation?.firstTagCode} last={allocation?.lastTagCode} />. {tr('Used and void tags are never returned.')}
         </p>
         <Field label="Return">
           <select className="form-control" value={mode} onChange={(ev) => setMode(ev.target.value)}>
-            <option value="all">All unused tags</option>
-            <option value="range">Only a range</option>
-            <option value="choose">Choose tags (search or paste)</option>
+            <option value="all">{tr('All unused tags')}</option>
+            <option value="range">{tr('Only a range')}</option>
+            <option value="choose">{tr('Choose tags (search or paste)')}</option>
           </select>
         </Field>
         {mode === 'choose' && (
@@ -326,7 +327,7 @@ const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
             </div>
             {!rangeValid && (
               <div className="col-12">
-                <div className="alert alert-warning">Choose numbers between {allocation?.startNo} and {allocation?.endNo}.</div>
+                <div className="alert alert-warning">{tr('Choose numbers between {from} and {to}.', { from: allocation?.startNo, to: allocation?.endNo })}</div>
               </div>
             )}
           </div>
@@ -336,14 +337,14 @@ const ReturnTagsModal = ({ allocation, onClose, onReturned }) => {
         </Field>
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>Cancel</button>
+        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>{tr('Cancel')}</button>
         <button
           type="button"
           className="btn btn-warning"
           onClick={submit}
           disabled={saving || (mode === 'range' && !rangeValid) || (mode === 'choose' && tagCodes.length === 0)}
         >
-          {saving ? 'Returning…' : mode === 'choose' ? `Return ${formatNumber(tagCodes.length)} tag(s)` : 'Return to stock'}
+          {saving ? tr('Returning…') : mode === 'choose' ? tr('Return {n} tag(s)', { n: formatNumber(tagCodes.length) }) : tr('Return to stock')}
         </button>
       </Modal.Footer>
     </Modal>
@@ -392,12 +393,12 @@ const AllocationsTab = ({ types, companies: allCompanies, isAdmin, onChanged, on
   return (
     <div className="card">
       <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h4 className="card-title mb-0">Allocations</h4>
+        <h4 className="card-title mb-0">{tr('Allocations')}</h4>
         <div className="d-flex gap-2 flex-wrap">
           <ExportButtons report="allocations" params={query} disabled={data.total === 0} />
           {isAdmin && (
             <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowAssign(true)}>
-              <i className="fa fa-share me-2" />Assign tags
+              <i className="fa fa-share me-2" />{tr('Assign tags')}
             </button>
           )}
         </div>
@@ -405,8 +406,8 @@ const AllocationsTab = ({ types, companies: allCompanies, isAdmin, onChanged, on
       <div className="card-body">
         {filters.batchId && (
           <div className="alert alert-info d-flex justify-content-between align-items-center py-2">
-            <span>Showing allocations of batch #{filters.batchId}</span>
-            <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setFilters({ batchId: '' })}>Show all</button>
+            <span>{tr('Showing allocations of batch #{id}', { id: filters.batchId })}</span>
+            <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setFilters({ batchId: '' })}>{tr('Show all')}</button>
           </div>
         )}
         <FilterPanel
@@ -457,17 +458,17 @@ const AllocationsTab = ({ types, companies: allCompanies, isAdmin, onChanged, on
                 <SortTh label="Allocation" sortKey="allocationCode" {...sortProps} />
                 <SortTh label="Company" sortKey="companyName" {...sortProps} />
                 <SortTh label="Type" sortKey="tagTypeName" {...sortProps} />
-                <th>Range</th>
+                <th>{tr('Range')}</th>
                 <SortTh label="Qty" sortKey="quantity" {...sortProps} />
                 <SortTh label="Remaining" sortKey="remainingCount" {...sortProps} />
                 <SortTh label="Used" sortKey="usedCount" {...sortProps} />
                 <SortTh label="% used" sortKey="usedPct" {...sortProps} style={{ minWidth: 140 }} />
-                <th>Void</th>
-                <th>Returned</th>
+                <th>{tr('Void')}</th>
+                <th>{tr('Returned')}</th>
                 <SortTh label="Last used" sortKey="lastUsedAt" {...sortProps} />
-                <th>Status</th>
+                <th>{tr('Status')}</th>
                 <SortTh label="Given" sortKey="assignedAt" {...sortProps} />
-                <th className="text-end">Actions</th>
+                <th className="text-end">{tr('Actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -492,15 +493,15 @@ const AllocationsTab = ({ types, companies: allCompanies, isAdmin, onChanged, on
                   </td>
                   <td>{formatNumber(a.voidCount)}</td>
                   <td>{formatNumber(a.returnedQuantity)}</td>
-                  <td className="text-nowrap"><small>{a.lastUsedAt ? formatDate(a.lastUsedAt) : 'Never'}</small></td>
+                  <td className="text-nowrap"><small>{a.lastUsedAt ? formatDate(a.lastUsedAt) : tr('Never')}</small></td>
                   <td><StatusBadge status={a.status} /></td>
                   <td className="text-nowrap">
-                    <small>{formatDate(a.assignedAt)}<br /><span className="text-muted">{a.daysSinceAssigned} days ago · {a.assignedBy}</span></small>
+                    <small>{formatDate(a.assignedAt)}<br /><span className="text-muted">{tr('{n} days ago', { n: a.daysSinceAssigned })} · {a.assignedBy}</span></small>
                   </td>
                   <td className="text-end text-nowrap">
-                    <button type="button" className="btn btn-sm btn-outline-primary me-1" onClick={() => onShowTags({ allocationId: a.id })}>Tags</button>
+                    <button type="button" className="btn btn-sm btn-outline-primary me-1" onClick={() => onShowTags({ allocationId: a.id })}>{tr('Tags')}</button>
                     {isAdmin && a.remainingCount > 0 && (
-                      <button type="button" className="btn btn-sm btn-outline-warning" onClick={() => setToReturn(a)}>Return</button>
+                      <button type="button" className="btn btn-sm btn-outline-warning" onClick={() => setToReturn(a)}>{tr('Return')}</button>
                     )}
                   </td>
                 </tr>

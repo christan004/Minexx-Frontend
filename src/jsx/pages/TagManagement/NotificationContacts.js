@@ -9,6 +9,7 @@ import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { tagApi, errorMessage } from './api';
 import { CompanySelect, Field, TableMessage, formatDate } from './shared';
+import { tr } from './i18n';
 
 const ROLES = ['Representative', 'In charge', 'Manager', 'Other'];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -69,7 +70,7 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
     try {
       if (form.id) await tagApi.updateNotificationContact(form.id, body(form));
       else await tagApi.createNotificationContact(body(form));
-      toast.success(form.id ? 'Contact updated' : 'Contact added');
+      toast.success(form.id ? tr('Contact updated') : tr('Contact added'));
       setForm({ ...emptyForm(scope), companyId: isCompany ? form.companyId : '' });
       load();
     } catch (err) {
@@ -89,10 +90,10 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
   };
 
   const remove = async (row) => {
-    if (!window.confirm(`Remove ${row.name} (${contactEmails(row).join(', ')})?`)) return;
+    if (!window.confirm(tr('Remove {name} ({emails})?', { name: row.name, emails: contactEmails(row).join(', ') }))) return;
     try {
       await tagApi.removeNotificationContact(row.id);
-      toast.success('Contact removed');
+      toast.success(tr('Contact removed'));
       if (form.id === row.id) setForm(emptyForm(scope));
       load();
     } catch (err) {
@@ -107,10 +108,10 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
   return (
     <div className="card">
       <div className="card-header">
-        <h4 className="card-title mb-0">{title}</h4>
+        <h4 className="card-title mb-0">{tr(title)}</h4>
       </div>
       <div className="card-body">
-        <p className="text-muted">{intro}</p>
+        <p className="text-muted">{tr(intro)}</p>
         <div className="row align-items-start">
           {isCompany && (
             <div className="col-md-3">
@@ -121,7 +122,7 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
           )}
           <div className={isCompany ? 'col-md-2' : 'col-md-3'}>
             <Field label="Name">
-              <input className="form-control" maxLength={100} value={form.name} onChange={(e) => set({ name: e.target.value })} placeholder="Full name" />
+              <input className="form-control" maxLength={100} value={form.name} onChange={(e) => set({ name: e.target.value })} placeholder={tr('Full name')} />
             </Field>
           </div>
           <div className="col-md-3">
@@ -131,20 +132,20 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
                   <div className="d-flex align-items-center gap-1">
                     <input type="email" className="form-control" maxLength={150} value={value}
                       onChange={(e) => setEmail(i, e.target.value)}
-                      placeholder={i ? 'another@example.com' : 'name@example.com'} aria-label={`Email ${i + 1}`} />
+                      placeholder={i ? 'another@example.com' : 'name@example.com'} aria-label={tr('Email {n}', { n: i + 1 })} />
                     {form.emails.length > 1 && (
-                      <button type="button" className="btn btn-link btn-sm text-danger p-0" title="Remove this email" onClick={() => removeEmail(i)}>
+                      <button type="button" className="btn btn-link btn-sm text-danger p-0" title={tr('Remove this email')} onClick={() => removeEmail(i)}>
                         <i className="fa fa-times" />
                       </button>
                     )}
                   </div>
-                  {badEmail(value) && <small className="text-danger">Enter a valid email address</small>}
-                  {!badEmail(value) && repeated(value, i) && <small className="text-danger">This email is already in the list</small>}
+                  {badEmail(value) && <small className="text-danger">{tr('Enter a valid email address')}</small>}
+                  {!badEmail(value) && repeated(value, i) && <small className="text-danger">{tr('This email is already in the list')}</small>}
                 </div>
               ))}
               {form.emails.length < MAX_EMAILS && (
                 <button type="button" className="btn btn-link btn-sm p-0 mt-1" onClick={addEmail}>
-                  <i className="fa fa-plus me-1" />Add another email
+                  <i className="fa fa-plus me-1" />{tr('Add another email')}
                 </button>
               )}
             </Field>
@@ -153,7 +154,7 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
             <Field label={isCompany ? 'Role' : 'Role (optional)'}>
               <select className="form-control" value={form.role} onChange={(e) => set({ role: e.target.value })}>
                 {!isCompany && <option value="">—</option>}
-                {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
+                {ROLES.map((r) => <option key={r} value={r}>{tr(r)}</option>)}
               </select>
             </Field>
           </div>
@@ -161,13 +162,13 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
             <div className="form-check mb-2">
               <input id={`notify-${scope}`} type="checkbox" className="form-check-input" checked={form.notifyLowStock}
                 onChange={(e) => set({ notifyLowStock: e.target.checked })} />
-              <label className="form-check-label" htmlFor={`notify-${scope}`}>Low stock alerts</label>
+              <label className="form-check-label" htmlFor={`notify-${scope}`}>{tr('Low stock alerts')}</label>
             </div>
             <div className="d-flex gap-2 mb-3">
               <button type="button" className="btn btn-primary btn-sm" disabled={!canSave} onClick={save}>
-                {saving ? 'Saving…' : form.id ? 'Save changes' : 'Add'}
+                {saving ? tr('Saving…') : form.id ? tr('Save changes') : tr('Add')}
               </button>
-              {form.id && <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setForm(emptyForm(scope))}>Cancel</button>}
+              {form.id && <button type="button" className="btn btn-outline-secondary btn-sm" onClick={() => setForm(emptyForm(scope))}>{tr('Cancel')}</button>}
             </div>
           </div>
         </div>
@@ -175,7 +176,7 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
         {isCompany && (
           <div className="row mb-2">
             <div className="col-md-4">
-              <CompanySelect companies={companies} value={companyFilter} onChange={setCompanyFilter} isClearable placeholder="Show all companies" />
+              <CompanySelect companies={companies} value={companyFilter} onChange={setCompanyFilter} isClearable placeholder={tr('Show all companies')} />
             </div>
           </div>
         )}
@@ -183,12 +184,12 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
           <table className="table">
             <thead>
               <tr>
-                {isCompany && <th>Company</th>}
-                <th>Name</th>
-                <th>Email</th>
-                <th>Role</th>
-                <th>Low stock alerts</th>
-                <th>Changed</th>
+                {isCompany && <th>{tr('Company')}</th>}
+                <th>{tr('Name')}</th>
+                <th>{tr('Email')}</th>
+                <th>{tr('Role')}</th>
+                <th>{tr('Low stock alerts')}</th>
+                <th>{tr('Changed')}</th>
                 <th />
               </tr>
             </thead>
@@ -204,21 +205,21 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
                     {contactEmails(row).map((email, i, all) => (
                       <div key={email}>
                         <a href={`mailto:${email}`}>{email}</a>
-                        {i === 0 && all.length > 1 && <small className="text-muted ms-1">(main)</small>}
+                        {i === 0 && all.length > 1 && <small className="text-muted ms-1">({tr('main')})</small>}
                       </div>
                     ))}
                   </td>
-                  <td>{row.role || '—'}</td>
+                  <td>{row.role ? tr(row.role) : '—'}</td>
                   <td>
                     <button type="button" className={`btn btn-xs btn-sm ${row.notifyLowStock ? 'btn-success' : 'btn-outline-secondary'}`} onClick={() => toggleAlerts(row)}
-                      title="Click to switch">
-                      {row.notifyLowStock ? 'On' : 'Off'}
+                      title={tr('Click to switch')}>
+                      {row.notifyLowStock ? tr('On') : tr('Off')}
                     </button>
                   </td>
                   <td><small className="text-muted">{row.updatedBy || row.createdBy}<br />{formatDate(row.updatedAt)}</small></td>
                   <td className="text-end text-nowrap">
-                    <button type="button" className="btn btn-outline-primary btn-sm me-1" onClick={() => edit(row)}>Edit</button>
-                    <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => remove(row)}>Remove</button>
+                    <button type="button" className="btn btn-outline-primary btn-sm me-1" onClick={() => edit(row)}>{tr('Edit')}</button>
+                    <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => remove(row)}>{tr('Remove')}</button>
                   </td>
                 </tr>
               ))}
@@ -234,7 +235,7 @@ const NotificationContacts = ({ companies, refreshKey }) => (
   <>
     <div className="alert alert-info">
       <i className="fa fa-envelope me-2" />
-      Emails are not sent yet. The people below are saved now, so low stock emails can start as soon as email is configured.
+      {tr('Emails are not sent yet. The people below are saved now, so low stock emails can start as soon as email is configured.')}
     </div>
     <ContactsCard
       scope="SYSTEM"

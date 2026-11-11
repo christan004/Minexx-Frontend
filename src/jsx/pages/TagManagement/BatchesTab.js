@@ -11,6 +11,7 @@ import {
   DateRangeFilter, ExportButtons, FilterPanel, MultiSelect, PageSize, SelectFilter, SortTh, TextFilter, TotalsBar,
   resolveRange, toQuery, useUrlFilters,
 } from './reports';
+import { tr } from './i18n';
 
 const BATCH_DEFAULTS = {
   page: '1', limit: '25', sort: '', dir: 'desc',
@@ -81,7 +82,7 @@ const GenerateBatchModal = ({ show, types, onClose, onCreated }) => {
         ...(mode === 'quantity' ? { quantity } : { endNo }),
         ...(form.note.trim() ? { note: form.note.trim() } : {}),
       });
-      toast.success(`Batch ${batch.batchCode} created: ${formatNumber(batch.quantity)} tags (${batch.firstTagCode} → ${batch.lastTagCode})`);
+      toast.success(tr('Batch {code} created: {n} tags ({first} → {last})', { code: batch.batchCode, n: formatNumber(batch.quantity), first: batch.firstTagCode, last: batch.lastTagCode }));
       onCreated();
     } catch (err) {
       setError(errorMessage(err));
@@ -93,7 +94,7 @@ const GenerateBatchModal = ({ show, types, onClose, onCreated }) => {
   return (
     <Modal show={show} onHide={() => !saving && onClose()} centered size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>Generate a batch of tags</Modal.Title>
+        <Modal.Title>{tr('Generate a batch of tags')}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {error && <div className="alert alert-danger">{error}</div>}
@@ -118,10 +119,10 @@ const GenerateBatchModal = ({ show, types, onClose, onCreated }) => {
                   : form.prefix === type.defaultPrefix ? 'Default from Settings'
                     : (
                       <>
-                        Default is {type.defaultPrefix}.{' '}
+                        {tr('Default is {prefix}.', { prefix: type.defaultPrefix })}{' '}
                         <button type="button" className="btn btn-link btn-sm p-0 align-baseline"
                           onClick={() => set({ prefix: type.defaultPrefix, serialLength: type.serialLength || 0 })}>
-                          Use default
+                          {tr('Use default')}
                         </button>
                       </>
                     )
@@ -132,7 +133,7 @@ const GenerateBatchModal = ({ show, types, onClose, onCreated }) => {
                 value={form.prefix || ''}
                 maxLength={20}
                 onChange={(e) => set({ prefix: e.target.value.replace(/[^A-Za-z0-9-]/g, '') })}
-                placeholder="e.g. MB"
+                placeholder={tr('e.g. MB')}
               />
             </Field>
           </div>
@@ -156,14 +157,14 @@ const GenerateBatchModal = ({ show, types, onClose, onCreated }) => {
           <div className="col-md-4">
             <Field label="Size by">
               <select className="form-control" value={mode} onChange={(e) => setMode(e.target.value)}>
-                <option value="quantity">Quantity</option>
-                <option value="end">Last number</option>
+                <option value="quantity">{tr('Quantity')}</option>
+                <option value="end">{tr('Last number')}</option>
               </select>
             </Field>
           </div>
           <div className="col-md-4">
             {mode === 'quantity' ? (
-              <Field label="Quantity" hint={`At most ${formatNumber(MAX_BATCH_QUANTITY)}`}>
+              <Field label="Quantity" hint={tr('At most {n}', { n: formatNumber(MAX_BATCH_QUANTITY) })}>
                 <input type="number" min={1} max={MAX_BATCH_QUANTITY} className="form-control" value={form.quantity || ''} onChange={(e) => set({ quantity: e.target.value })} />
               </Field>
             ) : (
@@ -180,11 +181,11 @@ const GenerateBatchModal = ({ show, types, onClose, onCreated }) => {
 
         {rangeValid && (
           <div className={`alert mb-0 ${tooMany || tooShort ? 'alert-warning' : 'alert-info'}`}>
-            {tooMany && `A batch can contain at most ${formatNumber(MAX_BATCH_QUANTITY)} tags.`}
-            {tooShort && `${serialLength} digits is too short for the number ${endNo}.`}
+            {tooMany && tr('A batch can contain at most {n} tags.', { n: formatNumber(MAX_BATCH_QUANTITY) })}
+            {tooShort && tr('{digits} digits is too short for the number {n}.', { digits: serialLength, n: endNo })}
             {!tooMany && !tooShort && (
               <>
-                {formatNumber(quantity)} tags:{' '}
+                {tr('{n} tags:', { n: formatNumber(quantity) })}{' '}
                 <RangeLabel first={formatTagCode(form.prefix, startNo, serialLength)} last={formatTagCode(form.prefix, endNo, serialLength)} />
               </>
             )}
@@ -192,9 +193,9 @@ const GenerateBatchModal = ({ show, types, onClose, onCreated }) => {
         )}
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>Cancel</button>
+        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>{tr('Cancel')}</button>
         <button type="button" className="btn btn-primary" onClick={submit} disabled={!canSubmit}>
-          {saving ? 'Generating…' : 'Generate tags'}
+          {saving ? tr('Generating…') : tr('Generate tags')}
         </button>
       </Modal.Footer>
     </Modal>
@@ -213,7 +214,7 @@ const CancelBatchModal = ({ batch, onClose, onCancelled }) => {
     setError(null);
     try {
       await tagApi.cancelBatch(batch.id, reason.trim());
-      toast.success(`Batch ${batch.batchCode} cancelled`);
+      toast.success(tr('Batch {code} cancelled', { code: batch.batchCode }));
       onCancelled();
     } catch (err) {
       setError(errorMessage(err));
@@ -225,22 +226,21 @@ const CancelBatchModal = ({ batch, onClose, onCancelled }) => {
   return (
     <Modal show={Boolean(batch)} onHide={() => !saving && onClose()} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Cancel batch {batch?.batchCode}</Modal.Title>
+        <Modal.Title>{tr('Cancel batch {code}', { code: batch?.batchCode || '' })}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {error && <div className="alert alert-danger">{error}</div>}
         <p>
-          All {formatNumber(batch?.quantity)} tags of this batch are deleted. This is only possible while none of them
-          has been assigned, used or voided.
+          {tr('All {n} tags of this batch are deleted. This is only possible while none of them has been assigned, used or voided.', { n: formatNumber(batch?.quantity) })}
         </p>
         <Field label="Reason">
-          <input className="form-control" value={reason} maxLength={255} onChange={(e) => setReason(e.target.value)} placeholder="At least 3 characters" />
+          <input className="form-control" value={reason} maxLength={255} onChange={(e) => setReason(e.target.value)} placeholder={tr('At least 3 characters')} />
         </Field>
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>Keep batch</button>
+        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>{tr('Keep batch')}</button>
         <button type="button" className="btn btn-danger" onClick={submit} disabled={saving || reason.trim().length < 3}>
-          {saving ? 'Cancelling…' : 'Cancel batch'}
+          {saving ? tr('Cancelling…') : tr('Cancel batch')}
         </button>
       </Modal.Footer>
     </Modal>
@@ -261,7 +261,7 @@ const BatchDetailModal = ({ batchId, onClose, onShowTags }) => {
   return (
     <Modal show={Boolean(batchId)} onHide={onClose} centered size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>Batch {batch?.batchCode}</Modal.Title>
+        <Modal.Title>{tr('Batch')} {batch?.batchCode}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {error && <div className="alert alert-danger mb-0">{error}</div>}
@@ -277,26 +277,26 @@ const BatchDetailModal = ({ batchId, onClose, onShowTags }) => {
               ].map(([label, value, cls]) => (
                 <div className="col-3 text-center" key={label}>
                   <div className={`fs-3 fw-bold ${cls}`}>{formatNumber(value)}</div>
-                  <small className="text-muted">{label}</small>
+                  <small className="text-muted">{tr(label)}</small>
                 </div>
               ))}
             </div>
             <p className="mb-1">
-              <span className="text-muted">Type:</span> {batch.tagTypeName} &nbsp;·&nbsp;
-              <span className="text-muted">Range:</span>{' '}
+              <span className="text-muted">{tr('Type')}:</span> {batch.tagTypeName} &nbsp;·&nbsp;
+              <span className="text-muted">{tr('Range')}:</span>{' '}
               <RangeLabel first={formatTagCode(batch.prefix, batch.startNo, batch.serialLength)} last={formatTagCode(batch.prefix, batch.endNo, batch.serialLength)} />
             </p>
-            <p className="mb-1"><span className="text-muted">Created:</span> {formatDate(batch.createdAt)} by {batch.createdBy}</p>
+            <p className="mb-1"><span className="text-muted">{tr('Created')}:</span> {formatDate(batch.createdAt)} {tr('by')} {batch.createdBy}</p>
             {batch.status === 'CANCELLED' && (
-              <p className="mb-1"><span className="text-muted">Cancelled:</span> {formatDate(batch.cancelledAt)} by {batch.cancelledBy}</p>
+              <p className="mb-1"><span className="text-muted">{tr('Cancelled')}:</span> {formatDate(batch.cancelledAt)} {tr('by')} {batch.cancelledBy}</p>
             )}
-            {batch.note && <p className="mb-1"><span className="text-muted">Note:</span> {batch.note}</p>}
+            {batch.note && <p className="mb-1"><span className="text-muted">{tr('Note')}:</span> {batch.note}</p>}
 
-            <h5 className="mt-4 mb-2">Assigned to</h5>
+            <h5 className="mt-4 mb-2">{tr('Assigned to')}</h5>
             <div className="table-responsive">
               <table className="table table-sm mb-0">
                 <thead>
-                  <tr><th>Allocation</th><th>Company</th><th>Range</th><th>Qty</th><th>Remaining</th><th>Status</th></tr>
+                  <tr><th>{tr('Allocation')}</th><th>{tr('Company')}</th><th>{tr('Range')}</th><th>{tr('Qty')}</th><th>{tr('Remaining')}</th><th>{tr('Status')}</th></tr>
                 </thead>
                 <tbody>
                   {batch.allocations.map((a) => (
@@ -310,7 +310,7 @@ const BatchDetailModal = ({ batchId, onClose, onShowTags }) => {
                     </tr>
                   ))}
                   {batch.allocations.length === 0 && (
-                    <tr><td colSpan={6} className="text-center text-muted">Not assigned to any company yet</td></tr>
+                    <tr><td colSpan={6} className="text-center text-muted">{tr('Not assigned to any company yet')}</td></tr>
                   )}
                 </tbody>
               </table>
@@ -321,10 +321,10 @@ const BatchDetailModal = ({ batchId, onClose, onShowTags }) => {
       <Modal.Footer>
         {batch && batch.status === 'ACTIVE' && (
           <button type="button" className="btn btn-outline-primary" onClick={() => onShowTags({ batchId: batch.id })}>
-            View tags of this batch
+            {tr('View tags of this batch')}
           </button>
         )}
-        <button type="button" className="btn btn-primary" onClick={onClose}>Close</button>
+        <button type="button" className="btn btn-primary" onClick={onClose}>{tr('Close')}</button>
       </Modal.Footer>
     </Modal>
   );
@@ -369,18 +369,18 @@ const BatchesTab = ({ types, companies, isAdmin, onChanged, onShowTags, refreshK
   return (
     <div className="card">
       <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h4 className="card-title mb-0">Batches</h4>
+        <h4 className="card-title mb-0">{tr('Batches')}</h4>
         {isAdmin && (
           <div className="d-flex gap-2 flex-wrap">
             <ExportButtons report="batches" params={query} disabled={data.total === 0} />
             <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => setClassify({ batch: null })}>
-              <i className="fa fa-tags me-2" />Classify tags
+              <i className="fa fa-tags me-2" />{tr('Classify tags')}
             </button>
             <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => setShowOpening(true)}>
-              <i className="fa fa-box-open me-2" />Register opening stock
+              <i className="fa fa-box-open me-2" />{tr('Register opening stock')}
             </button>
             <button type="button" className="btn btn-primary btn-sm" onClick={() => setShowGenerate(true)} disabled={usableTypes.length === 0}>
-              <i className="fa fa-plus me-2" />Generate batch
+              <i className="fa fa-plus me-2" />{tr('Generate batch')}
             </button>
           </div>
         )}
@@ -433,16 +433,16 @@ const BatchesTab = ({ types, companies, isAdmin, onChanged, onShowTags, refreshK
               <tr>
                 <SortTh label="Batch" sortKey="batchCode" {...sortProps} />
                 <SortTh label="Type" sortKey="tagTypeName" {...sortProps} />
-                <th>Range</th>
+                <th>{tr('Range')}</th>
                 <SortTh label="Qty" sortKey="quantity" {...sortProps} />
                 <SortTh label="Available" sortKey="availableCount" {...sortProps} />
                 <SortTh label="Assigned" sortKey="assignedCount" {...sortProps} />
                 <SortTh label="Used" sortKey="usedCount" {...sortProps} />
                 <SortTh label="% used" sortKey="usedPct" {...sortProps} style={{ minWidth: 140 }} />
-                <th>Void</th>
+                <th>{tr('Void')}</th>
                 <SortTh label="Status" sortKey="status" {...sortProps} />
                 <SortTh label="Created" sortKey="createdAt" {...sortProps} />
-                <th className="text-end">Actions</th>
+                <th className="text-end">{tr('Actions')}</th>
               </tr>
             </thead>
             <tbody>
@@ -460,12 +460,12 @@ const BatchesTab = ({ types, companies, isAdmin, onChanged, onShowTags, refreshK
                   <tr key={b.id}>
                     <td className="fw-bold">
                       {b.batchCode}
-                      {b.source === 'OPENING' && <div><span className="badge light badge-warning">Opening stock</span></div>}
+                      {b.source === 'OPENING' && <div><span className="badge light badge-warning">{tr('Opening stock')}</span></div>}
                     </td>
                     <td>{b.tagTypeName}</td>
                     <td>
                       <RangeLabel first={formatTagCode(b.prefix, b.startNo, b.serialLength)} last={formatTagCode(b.prefix, b.endNo, b.serialLength)} />
-                      {gaps && <div><small className="text-muted">not continuous</small></div>}
+                      {gaps && <div><small className="text-muted">{tr('not continuous')}</small></div>}
                     </td>
                     <td>{formatNumber(b.quantity)}</td>
                     <td>{formatNumber(b.availableCount)}</td>
@@ -483,12 +483,12 @@ const BatchesTab = ({ types, companies, isAdmin, onChanged, onShowTags, refreshK
                     <td><StatusBadge status={b.status} /></td>
                     <td className="text-nowrap"><small>{formatDate(b.createdAt)}<br /><span className="text-muted">{b.createdBy}</span></small></td>
                     <td className="text-end text-nowrap">
-                      <button type="button" className="btn btn-sm btn-outline-primary me-1" onClick={() => setDetailId(b.id)}>View</button>
+                      <button type="button" className="btn btn-sm btn-outline-primary me-1" onClick={() => setDetailId(b.id)}>{tr('View')}</button>
                       {isAdmin && unclassified && (
-                        <button type="button" className="btn btn-sm btn-outline-info me-1" onClick={() => setClassify({ batch: b })}>Classify</button>
+                        <button type="button" className="btn btn-sm btn-outline-info me-1" onClick={() => setClassify({ batch: b })}>{tr('Classify')}</button>
                       )}
                       {isAdmin && cancellable && (
-                        <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setToCancel(b)}>Cancel</button>
+                        <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setToCancel(b)}>{tr('Cancel')}</button>
                       )}
                     </td>
                   </tr>

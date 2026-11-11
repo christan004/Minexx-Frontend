@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { tagApi, errorMessage } from './api';
 import { CompanySelect, Field, formatNumber } from './shared';
 import { TagSummary } from './TagDetailModal';
+import { tr } from './i18n';
 
 const STAT_ROWS = [
   { key: 'availableCount', label: 'Available', color: '#22c55e' },
@@ -12,6 +13,18 @@ const STAT_ROWS = [
 
 const ICONS = { MINE_BAG: 'fa-cube', COMPTOIR_TAG: 'fa-industry', EXPORT_TAG: 'fa-ship' };
 
+// The API's check answers, by reason (same wording as the API, so they can be translated)
+const USAGE_TEXT = {
+  OK: 'Tag can be used',
+  TAG_NOT_FOUND: "Tag '{code}' does not exist",
+  UNCLASSIFIED: "Tag '{code}' is not classified yet",
+  WRONG_TAG_TYPE: "Tag '{code}' is a {type} tag",
+  ALREADY_USED: "Tag '{code}' has already been used",
+  VOID: "Tag '{code}' is void",
+  NOT_ASSIGNED: "Tag '{code}' is not assigned to any company",
+  WRONG_COMPANY: "Tag '{code}' is assigned to another company",
+};
+
 const SummaryCard = ({ row, minimum, low }) => (
   <div className="col-xl-4 col-lg-6 mb-3">
     <div className="card h-100 mb-0" style={{ backgroundColor: '#1A2228', ...(low ? { border: '1px solid #ef4444' } : {}) }}>
@@ -20,13 +33,13 @@ const SummaryCard = ({ row, minimum, low }) => (
           <div>
             <h6 className="text-muted mb-1">
               {row.tagTypeName}
-              {low && <span className="badge badge-danger ms-2">Low stock</span>}
+              {low && <span className="badge badge-danger ms-2">{tr('Low stock')}</span>}
             </h6>
             <h2 className="text-primary mb-0" style={{ fontSize: '2.2rem', fontWeight: 700 }}>
               {formatNumber(row.total)}
             </h2>
             <small className="text-muted">
-              tags generated{minimum > 0 ? ` · alert at ${formatNumber(minimum)} available` : ''}
+              {tr('tags generated')}{minimum > 0 ? ` · ${tr('alert at {n} available', { n: formatNumber(minimum) })}` : ''}
             </small>
           </div>
           <div
@@ -43,7 +56,7 @@ const SummaryCard = ({ row, minimum, low }) => (
           return (
             <div key={key} className="mb-2">
               <div className="d-flex justify-content-between" style={{ fontSize: 13 }}>
-                <span className="text-muted">{label}</span>
+                <span className="text-muted">{tr(label)}</span>
                 <span>{formatNumber(row[key])}</span>
               </div>
               <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 3 }}>
@@ -84,7 +97,7 @@ const TagCheck = ({ companies, onOpenTag }) => {
   return (
     <div className="card">
       <div className="card-header">
-        <h4 className="card-title mb-0">Find or check a tag</h4>
+        <h4 className="card-title mb-0">{tr('Find or check a tag')}</h4>
       </div>
       <div className="card-body">
         <div className="row">
@@ -94,7 +107,7 @@ const TagCheck = ({ companies, onOpenTag }) => {
                 className="form-control"
                 value={code}
                 onChange={(e) => { setCode(e.target.value); setResult(null); }}
-                placeholder="e.g. MB000123"
+                placeholder={tr('e.g. MB000123')}
               />
             </Field>
           </div>
@@ -105,10 +118,10 @@ const TagCheck = ({ companies, onOpenTag }) => {
           </div>
           <div className="col-md-3 d-flex align-items-end gap-2 mb-3">
             <button type="button" className="btn btn-outline-primary" disabled={!code.trim()} onClick={() => onOpenTag(code.trim())}>
-              History
+              {tr('History')}
             </button>
             <button type="button" className="btn btn-primary" disabled={!code.trim() || checking} onClick={check}>
-              {checking ? 'Checking…' : 'Check'}
+              {checking ? tr('Checking…') : tr('Check')}
             </button>
           </div>
         </div>
@@ -116,7 +129,9 @@ const TagCheck = ({ companies, onOpenTag }) => {
         {result?.usage && (
           <div className={`alert ${result.usage.valid ? 'alert-success' : 'alert-warning'}`}>
             {result.usage.valid ? '✓ ' : '✕ '}
-            {result.usage.message}
+            {USAGE_TEXT[result.usage.reason]
+              ? tr(USAGE_TEXT[result.usage.reason], { code: code.trim(), type: result.usage.tag?.tag_type_code || '' })
+              : tr(result.usage.message)}
           </div>
         )}
         {result?.tag && <TagSummary tag={result.tag} />}

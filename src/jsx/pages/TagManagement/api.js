@@ -4,6 +4,7 @@
  * Every endpoint answers { success, data }; these helpers return `data`.
  */
 import axiosInstance from '../../../services/AxiosInstance';
+import { tr } from './i18n';
 
 const BASE = 'tag-management';
 
@@ -16,9 +17,9 @@ const del = async (path) => (await axiosInstance.delete(`${BASE}/${path}`)).data
 const clean = (params = {}) =>
   Object.fromEntries(Object.entries(params).filter(([, value]) => value !== '' && value !== null && value !== undefined));
 
-/** Message to show for a failed request (API message, validation message or network error). */
+/** Message to show for a failed request (API message, validation message or network error), in the chosen language when known. */
 export const errorMessage = (err) =>
-  err?.response?.data?.message || err?.message || 'Something went wrong';
+  tr(err?.response?.data?.message || err?.message || 'Something went wrong');
 
 export const tagApi = {
   types: () => get('types'),

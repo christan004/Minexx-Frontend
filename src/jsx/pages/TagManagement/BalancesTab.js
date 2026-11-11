@@ -11,7 +11,7 @@ import { toast } from 'react-toastify';
 import {
   Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import moment from 'moment';
+import { localMoment as moment, tr } from './i18n';
 import { tagApi, errorMessage } from './api';
 import { TableMessage, formatDate, formatNumber } from './shared';
 import BalanceDetailModal from './BalanceDetailModal';
@@ -34,7 +34,7 @@ const GROUP_OPTIONS = [['both', 'Company and tag type'], ['company', 'Company'],
 // The movement report always needs a period, so "Any time" is not offered
 const MOVEMENT_RANGES = ['today', 'week', 'month', '3months', 'year', 'custom'];
 
-const nameOf = (row) => row.companyName || row.companyId || 'All companies';
+const nameOf = (row) => row.companyName || row.companyId || tr('All companies');
 
 /* ── Current balance ─────────────────────────────────── */
 
@@ -92,7 +92,7 @@ const CurrentBalance = ({ filters, setFilters, refreshKey, onOpenTag }) => {
               <SortTh label="Used" sortKey="usedCount" {...sortProps} />
               <SortTh label="Void" sortKey="voidCount" {...sortProps} />
               <SortTh label="Remaining" sortKey="remainingCount" {...sortProps} />
-              <th>Minimum</th>
+              <th>{tr('Minimum')}</th>
               <SortTh label="Avg used / month" sortKey="avgMonthlyUse" {...sortProps} />
               <SortTh label="Months left" sortKey="monthsLeft" {...sortProps} />
               <SortTh label="Last given" sortKey="lastAssignedAt" {...sortProps} />
@@ -104,7 +104,7 @@ const CurrentBalance = ({ filters, setFilters, refreshKey, onOpenTag }) => {
               <TableMessage colSpan={showCompany ? 11 : 10} loading={loading}>No tags have been given to companies for these filters</TableMessage>
             )}
             {!loading && rows.map((r) => (
-              <tr key={`${r.companyId}-${r.tagTypeId}`} onClick={() => open(r)} title="Click to see the tags"
+              <tr key={`${r.companyId}-${r.tagTypeId}`} onClick={() => open(r)} title={tr('Click to see the tags')}
                 style={{ cursor: 'pointer', ...(r.low ? { background: 'rgba(239,68,68,0.12)' } : {}) }}>
                 {showCompany && <td className="text-primary">{nameOf(r)} <i className="fa fa-search ms-1" style={{ fontSize: 11, opacity: 0.6 }} /></td>}
                 <td>{r.tagTypeName || '—'}</td>
@@ -113,25 +113,25 @@ const CurrentBalance = ({ filters, setFilters, refreshKey, onOpenTag }) => {
                 <td><CountLink value={r.voidCount} onClick={() => open(r, 'void')} /></td>
                 <td>
                   <CountLink value={r.remainingCount} onClick={() => open(r, 'remaining')} bold />
-                  {r.low && <span className="badge badge-danger ms-2">Low</span>}
+                  {r.low && <span className="badge badge-danger ms-2">{tr('Low')}</span>}
                 </td>
                 <td>{r.minimum ? formatNumber(r.minimum) : '—'}</td>
                 <td>{formatNumber(r.avgMonthlyUse)}</td>
                 <td>
-                  {r.monthsLeft === null ? <small className="text-muted">No recent use</small>
+                  {r.monthsLeft === null ? <small className="text-muted">{tr('No recent use')}</small>
                     : <span style={{ color: r.monthsLeft < 1 ? '#f87171' : r.monthsLeft < 3 ? '#fbbf24' : undefined }}>
-                      {formatNumber(r.monthsLeft)}{r.monthsLeft < 1 ? ' (under a month)' : ''}
+                      {formatNumber(r.monthsLeft)}{r.monthsLeft < 1 ? ` (${tr('under a month')})` : ''}
                     </span>}
                 </td>
                 <td className="text-nowrap"><small>{r.lastAssignedAt ? formatDate(r.lastAssignedAt) : '—'}</small></td>
-                <td className="text-nowrap"><small>{r.lastUsedAt ? formatDate(r.lastUsedAt) : 'Never'}</small></td>
+                <td className="text-nowrap"><small>{r.lastUsedAt ? formatDate(r.lastUsedAt) : tr('Never')}</small></td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <small className="text-muted">
-        Click a company to see its tags, or click a number to see those tags. Average use is measured over the last 3 months. Months left = remaining ÷ average use per month.
+        {tr('Click a company to see its tags, or click a number to see those tags.')} {tr('Average use is measured over the last 3 months. Months left = remaining ÷ average use per month.')}
       </small>
       <BalanceDetailModal row={detail?.row} initialView={detail?.view} onClose={() => setDetail(null)} onOpenTag={onOpenTag} />
     </>
@@ -163,12 +163,12 @@ const StockMovement = ({ filters, refreshKey }) => {
   const showCompany = filters.groupBy !== 'type';
   const reclassified = (r) => (r.reclassifiedIn || 0) - (r.reclassifiedOut || 0);
 
-  if (!ready) return <div className="alert alert-info">Choose both dates of the period.</div>;
+  if (!ready) return <div className="alert alert-info">{tr('Choose both dates of the period.')}</div>;
   return (
     <>
       <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
         <span className="text-muted">
-          Unused tags held by companies from <b>{moment(period.from).format('DD MMM YYYY')}</b> to <b>{moment(period.to).format('DD MMM YYYY')}</b>
+          {tr('Unused tags held by companies from')} <b>{moment(period.from).format('DD MMM YYYY')}</b> {tr('to')} <b>{moment(period.to).format('DD MMM YYYY')}</b>
         </span>
         <ExportButtons report="movement" params={query} disabled={data.items.length === 0} />
       </div>
@@ -184,15 +184,15 @@ const StockMovement = ({ filters, refreshKey }) => {
         <table className="table">
           <thead>
             <tr>
-              {showCompany && <th>Company</th>}
-              <th>Tag type</th>
-              <th>Opening</th>
-              <th>+ Received</th>
-              <th>± Reclassified</th>
-              <th>− Returned</th>
-              <th>− Used</th>
-              <th>− Voided</th>
-              <th>= Closing</th>
+              {showCompany && <th>{tr('Company')}</th>}
+              <th>{tr('Tag type')}</th>
+              <th>{tr('Opening')}</th>
+              <th>+ {tr('Received')}</th>
+              <th>± {tr('Reclassified')}</th>
+              <th>− {tr('Returned')}</th>
+              <th>− {tr('Used')}</th>
+              <th>− {tr('Voided')}</th>
+              <th>= {tr('Closing')}</th>
             </tr>
           </thead>
           <tbody>
@@ -216,7 +216,7 @@ const StockMovement = ({ filters, refreshKey }) => {
           {!loading && data.items.length > 1 && (
             <tfoot>
               <tr className="fw-bold">
-                <td colSpan={showCompany ? 2 : 1}>Total</td>
+                <td colSpan={showCompany ? 2 : 1}>{tr('Total')}</td>
                 <td>{formatNumber(t.opening)}</td>
                 <td>{formatNumber(t.received)}</td>
                 <td>{formatNumber((t.reclassifiedIn || 0) - (t.reclassifiedOut || 0))}</td>
@@ -229,7 +229,7 @@ const StockMovement = ({ filters, refreshKey }) => {
           )}
         </table>
       </div>
-      <small className="text-muted">Reclassified = Unclassified opening stock that received its tag type during the period.</small>
+      <small className="text-muted">{tr('Reclassified = Unclassified opening stock that received its tag type during the period.')}</small>
     </>
   );
 };
@@ -268,14 +268,14 @@ const MonthlyTrend = ({ filters, refreshKey }) => {
             <YAxis stroke="#94a3b8" tick={{ fontSize: 12 }} allowDecimals={false} />
             <Tooltip contentStyle={{ background: '#1a2228', border: '1px solid #2a3a4a', color: '#e2e8f0' }} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
             <Legend />
-            <Bar dataKey="received" name="Received" fill="#38bdf8" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="used" name="Used" fill="#a78bfa" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="received" name={tr('Received')} fill="#38bdf8" radius={[4, 4, 0, 0]} />
+            <Bar dataKey="used" name={tr('Used')} fill="#a78bfa" radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </div>
       <div className="table-responsive mt-3">
         <table className="table table-sm">
-          <thead><tr><th>Month</th><th>Received</th><th>Used</th></tr></thead>
+          <thead><tr><th>{tr('Month')}</th><th>{tr('Received')}</th><th>{tr('Used')}</th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.month}><td>{moment(`${r.month}-01`).format('MMMM YYYY')}</td><td>{formatNumber(r.received)}</td><td>{formatNumber(r.used)}</td></tr>
@@ -298,12 +298,12 @@ const BalancesTab = ({ types, companies, refreshKey, onOpenTag }) => {
   return (
     <div className="card">
       <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h4 className="card-title mb-0">Balances</h4>
-        <div className="btn-group" role="group" aria-label="Report">
+        <h4 className="card-title mb-0">{tr('Balances')}</h4>
+        <div className="btn-group" role="group" aria-label={tr('Report')}>
           {VIEWS.map(([key, label, icon]) => (
             <button key={key} type="button" className={`btn btn-sm ${view === key ? 'btn-primary' : 'btn-outline-primary'}`}
               onClick={() => setFilters({ view: key })}>
-              <i className={`fa ${icon} me-2`} />{label}
+              <i className={`fa ${icon} me-2`} />{tr(label)}
             </button>
           ))}
         </div>

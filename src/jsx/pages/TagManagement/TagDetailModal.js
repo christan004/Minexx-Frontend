@@ -2,21 +2,23 @@ import React, { useEffect, useState } from 'react';
 import { Modal } from 'react-bootstrap';
 import { tagApi, errorMessage } from './api';
 import { StatusBadge, formatDate } from './shared';
+import { tr } from './i18n';
 
 const Row = ({ label, children }) => (
   <div className="d-flex justify-content-between py-2" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-    <span className="text-muted">{label}</span>
+    <span className="text-muted">{tr(label)}</span>
     <span className="text-end">{children || '—'}</span>
   </div>
 );
 
 const describeEvent = (event) => {
   const range = event.startNo != null && event.endNo != null && event.startNo !== event.endNo
-    ? ` (range ${event.startNo}–${event.endNo})`
+    ? ` (${tr('range {from}–{to}', { from: event.startNo, to: event.endNo })})`
     : '';
   const reason = event.details?.reason ? ` — ${event.details.reason}` : '';
   const ref = event.details?.refTable ? ` — ${event.details.refTable} ${event.details.refId || ''}` : '';
-  return `${event.fromStatus || '—'} → ${event.toStatus || '—'}${range}${reason}${ref}`;
+  const status = (value) => (value ? tr(value) : '—');
+  return `${status(event.fromStatus)} → ${status(event.toStatus)}${range}${reason}${ref}`;
 };
 
 /** A tag's current details: status, type, company and where it was used. */
@@ -55,7 +57,7 @@ const TagDetailModal = ({ tagCode, onClose }) => {
     <Modal show={Boolean(tagCode)} onHide={onClose} size="lg" centered>
       <Modal.Header closeButton>
         <Modal.Title>
-          Tag <span style={{ fontFamily: 'monospace' }}>{tagCode}</span>
+          {tr('Tag')} <span style={{ fontFamily: 'monospace' }}>{tagCode}</span>
         </Modal.Title>
       </Modal.Header>
       <Modal.Body>
@@ -69,15 +71,15 @@ const TagDetailModal = ({ tagCode, onClose }) => {
           <>
             <TagSummary tag={tag} />
 
-            <h5 className="mt-4 mb-3">History</h5>
+            <h5 className="mt-4 mb-3">{tr('History')}</h5>
             <div className="table-responsive">
               <table className="table table-sm mb-0">
                 <thead>
                   <tr>
-                    <th>When</th>
-                    <th>Event</th>
-                    <th>Change</th>
-                    <th>By</th>
+                    <th>{tr('When')}</th>
+                    <th>{tr('Event')}</th>
+                    <th>{tr('Change')}</th>
+                    <th>{tr('By')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -90,7 +92,7 @@ const TagDetailModal = ({ tagCode, onClose }) => {
                     </tr>
                   ))}
                   {tag.history.length === 0 && (
-                    <tr><td colSpan={4} className="text-center text-muted">No history</td></tr>
+                    <tr><td colSpan={4} className="text-center text-muted">{tr('No history')}</td></tr>
                   )}
                 </tbody>
               </table>

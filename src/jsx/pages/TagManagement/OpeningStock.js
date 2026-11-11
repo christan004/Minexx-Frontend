@@ -9,12 +9,13 @@ import { tagApi, errorMessage } from './api';
 import {
   CompanySelect, Field, RangeLabel, TypeSelect, UNCLASSIFIED_CODE, formatNumber, parseCodeList,
 } from './shared';
+import { tr } from './i18n';
 
 const ModeSwitch = ({ value, options, onChange }) => (
   <div className="btn-group mb-3" role="group">
     {options.map(([key, label]) => (
       <button key={key} type="button" className={`btn btn-sm ${value === key ? 'btn-primary' : 'btn-outline-primary'}`} onClick={() => onChange(key)}>
-        {label}
+        {tr(label)}
       </button>
     ))}
   </div>
@@ -32,7 +33,7 @@ const CodeListInput = ({ text, onChange }) => {
   };
   const count = parseCodeList(text).length;
   return (
-    <Field label="Tag codes" hint={`${formatNumber(count)} code(s). One per line, or separated by commas or spaces.`}>
+    <Field label="Tag codes" hint={tr('{n} code(s). One per line, or separated by commas or spaces.', { n: formatNumber(count) })}>
       <textarea className="form-control" rows={6} value={text} onChange={(e) => onChange(e.target.value)} placeholder={'5449\n5450\n9906929'} />
       <input type="file" accept=".csv,.txt" className="form-control form-control-sm mt-2" onChange={loadFile} />
     </Field>
@@ -43,10 +44,10 @@ const Problems = ({ title, list, render = (x) => x }) => {
   if (!list || list.count === 0) return null;
   return (
     <div className="mt-2">
-      <strong>{formatNumber(list.count)} {title}</strong>
+      <strong>{formatNumber(list.count)} {tr(title)}</strong>
       <div className="text-muted" style={{ fontFamily: 'monospace', fontSize: 12, maxHeight: 90, overflowY: 'auto' }}>
         {list.sample.map(render).join(', ')}
-        {list.count > list.sample.length ? ` … and ${formatNumber(list.count - list.sample.length)} more` : ''}
+        {list.count > list.sample.length ? ` ${tr('… and {n} more', { n: formatNumber(list.count - list.sample.length) })}` : ''}
       </div>
     </div>
   );
@@ -87,7 +88,7 @@ export const OpeningStockModal = ({ show, types, companies, onClose, onDone }) =
       if (dryRun) {
         setReport(result);
       } else {
-        toast.success(`${formatNumber(result.batches.reduce((n, b) => n + b.quantity, 0))} tags registered (${result.batches.map((b) => b.batchCode).join(', ')})`);
+        toast.success(tr('{n} tags registered ({batches})', { n: formatNumber(result.batches.reduce((n, b) => n + b.quantity, 0)), batches: result.batches.map((b) => b.batchCode).join(', ') }));
         onDone();
       }
     } catch (err) {
@@ -101,26 +102,25 @@ export const OpeningStockModal = ({ show, types, companies, onClose, onDone }) =
   return (
     <Modal show={show} onHide={() => !busy && onClose()} centered size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>Register opening stock</Modal.Title>
+        <Modal.Title>{tr('Register opening stock')}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <p className="text-muted">
-          Record tags that already exist. Nothing new is printed. Tags already in the system or already used in
-          Bags, Proc Bags, Processing, Production or Drum are skipped.
+          {tr('Record tags that already exist. Nothing new is printed. Tags already in the system or already used in Bags, Proc Bags, Processing, Production or Drum are skipped.')}
         </p>
         {error && <div className="alert alert-danger">{error}</div>}
         <div className="row">
           <div className="col-md-6">
             <Field label="Tag type" hint="Not sure yet? Leave it Unclassified and classify the tags later.">
               <select className="form-control" value={form.tagTypeId} onChange={(e) => set({ tagTypeId: e.target.value })}>
-                <option value="">Unclassified (not known yet)</option>
+                <option value="">{tr('Unclassified (not known yet)')}</option>
                 {types.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </Field>
           </div>
           <div className="col-md-6">
             <Field label="Held by" hint="Leave empty when Minexx still holds the tags">
-              <CompanySelect companies={companies} value={form.companyId} onChange={(v) => set({ companyId: v })} isClearable placeholder="Minexx (no company)" />
+              <CompanySelect companies={companies} value={form.companyId} onChange={(v) => set({ companyId: v })} isClearable placeholder={tr('Minexx (no company)')} />
             </Field>
           </div>
         </div>
@@ -157,14 +157,14 @@ export const OpeningStockModal = ({ show, types, companies, onClose, onDone }) =
         )}
 
         <Field label="Note (optional)">
-          <input className="form-control" maxLength={500} value={form.note} onChange={(e) => set({ note: e.target.value })} placeholder="e.g. Physical count 10 Nov 2026" />
+          <input className="form-control" maxLength={500} value={form.note} onChange={(e) => set({ note: e.target.value })} placeholder={tr('e.g. Physical count 10 Nov 2026')} />
         </Field>
 
         {report && (
           <div className={`alert ${report.toRegister > 0 ? 'alert-info' : 'alert-warning'} mb-0`}>
             <div>
-              <strong>{formatNumber(report.toRegister)}</strong> tag(s) will be registered as <strong>{report.tagType.name}</strong>,
-              held by <strong>{company ? company.name || company.id : 'Minexx'}</strong>
+              <strong>{formatNumber(report.toRegister)}</strong> {tr('tag(s) will be registered as')} <strong>{report.tagType.name}</strong>,
+              {' '}{tr('held by')} <strong>{company ? company.name || company.id : 'Minexx'}</strong>
               {report.toRegister > 0 && <> : <RangeLabel first={report.firstTagCode} last={report.lastTagCode} /></>}
             </div>
             <Problems title="already in the system (skipped)" list={report.alreadyInSystem} />
@@ -174,12 +174,12 @@ export const OpeningStockModal = ({ show, types, companies, onClose, onDone }) =
         )}
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>Close</button>
+        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>{tr('Close')}</button>
         <button type="button" className="btn btn-outline-primary" disabled={!ready || busy} onClick={() => run(true)}>
-          {busy && !report ? 'Checking…' : 'Check'}
+          {busy && !report ? tr('Checking…') : tr('Check')}
         </button>
         <button type="button" className="btn btn-primary" disabled={!report || report.toRegister === 0 || busy} onClick={() => run(false)}>
-          {busy && report ? 'Registering…' : `Register ${report ? formatNumber(report.toRegister) : ''} tags`}
+          {busy && report ? tr('Registering…') : tr('Register {n} tags', { n: report ? formatNumber(report.toRegister) : '' })}
         </button>
       </Modal.Footer>
     </Modal>
@@ -233,7 +233,7 @@ export const ClassifyModal = ({ show, types, allTypes, presetBatch, onClose, onD
       if (dryRun) {
         setReport(result);
       } else {
-        toast.success(`${formatNumber(result.classified)} tags classified as ${result.tagType.name}`);
+        toast.success(tr('{n} tags classified as {type}', { n: formatNumber(result.classified), type: result.tagType.name }));
         onDone();
       }
     } catch (err) {
@@ -247,10 +247,10 @@ export const ClassifyModal = ({ show, types, allTypes, presetBatch, onClose, onD
   return (
     <Modal show={show} onHide={() => !busy && onClose()} centered size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>Classify tags</Modal.Title>
+        <Modal.Title>{tr('Classify tags')}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <p className="text-muted">Give Unclassified tags their tag type. Only then can they be allocated and used.</p>
+        <p className="text-muted">{tr('Give Unclassified tags their tag type. Only then can they be allocated and used.')}</p>
         {error && <div className="alert alert-danger">{error}</div>}
         <Field label="New tag type">
           <TypeSelect types={types} value={form.tagTypeId} onChange={(v) => set({ tagTypeId: v })} allLabel="Select a tag type…" />
@@ -263,21 +263,21 @@ export const ClassifyModal = ({ show, types, allTypes, presetBatch, onClose, onD
             <div className="col-md-6">
               <Field label="Batch with Unclassified tags">
                 <select className="form-control" value={form.batchId} onChange={(e) => set({ batchId: e.target.value })}>
-                  <option value="">Select a batch…</option>
+                  <option value="">{tr('Select a batch…')}</option>
                   {[...batches, ...(presetBatch && !batches.some((b) => b.id === presetBatch.id) ? [presetBatch] : [])].map((b) => (
-                    <option key={b.id} value={b.id}>{b.batchCode} ({formatNumber(b.quantity)} tags)</option>
+                    <option key={b.id} value={b.id}>{b.batchCode} ({tr('{n} tags', { n: formatNumber(b.quantity) })})</option>
                   ))}
                 </select>
               </Field>
             </div>
             <div className="col-md-3">
-              <Field label="From number" hint={batch ? `Batch starts at ${batch.startNo}` : 'Optional'}>
-                <input type="number" min={1} className="form-control" value={form.startNo} onChange={(e) => set({ startNo: e.target.value })} placeholder="All" />
+              <Field label="From number" hint={batch ? tr('Batch starts at {n}', { n: batch.startNo }) : 'Optional'}>
+                <input type="number" min={1} className="form-control" value={form.startNo} onChange={(e) => set({ startNo: e.target.value })} placeholder={tr('All')} />
               </Field>
             </div>
             <div className="col-md-3">
-              <Field label="To number" hint={batch ? `Batch ends at ${batch.endNo}` : 'Optional'}>
-                <input type="number" min={1} className="form-control" value={form.endNo} onChange={(e) => set({ endNo: e.target.value })} placeholder="All" />
+              <Field label="To number" hint={batch ? tr('Batch ends at {n}', { n: batch.endNo }) : 'Optional'}>
+                <input type="number" min={1} className="form-control" value={form.endNo} onChange={(e) => set({ endNo: e.target.value })} placeholder={tr('All')} />
               </Field>
             </div>
           </div>
@@ -288,7 +288,7 @@ export const ClassifyModal = ({ show, types, allTypes, presetBatch, onClose, onD
         {report && (
           <div className={`alert ${report.toClassify > 0 ? 'alert-info' : 'alert-warning'} mb-0`}>
             <div>
-              <strong>{formatNumber(report.toClassify)}</strong> tag(s) will become <strong>{report.tagType.name}</strong>
+              <strong>{formatNumber(report.toClassify)}</strong> {tr('tag(s) will become')} <strong>{report.tagType.name}</strong>
               {report.toClassify > 0 && <> : <RangeLabel first={report.firstTagCode} last={report.lastTagCode} /></>}
             </div>
             <Problems title="already have a type (skipped)" list={report.alreadyClassified} />
@@ -298,12 +298,12 @@ export const ClassifyModal = ({ show, types, allTypes, presetBatch, onClose, onD
         )}
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>Close</button>
+        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>{tr('Close')}</button>
         <button type="button" className="btn btn-outline-primary" disabled={!ready || busy} onClick={() => run(true)}>
-          {busy && !report ? 'Checking…' : 'Check'}
+          {busy && !report ? tr('Checking…') : tr('Check')}
         </button>
         <button type="button" className="btn btn-primary" disabled={!report || report.toClassify === 0 || busy} onClick={() => run(false)}>
-          {busy && report ? 'Classifying…' : `Classify ${report ? formatNumber(report.toClassify) : ''} tags`}
+          {busy && report ? tr('Classifying…') : tr('Classify {n} tags', { n: report ? formatNumber(report.toClassify) : '' })}
         </button>
       </Modal.Footer>
     </Modal>

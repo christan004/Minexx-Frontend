@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { tagApi, errorMessage } from './api';
 import { Pagination, StatusBadge, TableMessage, formatDate, formatNumber } from './shared';
 import { ExportButtons, PageSize } from './reports';
+import { tr } from './i18n';
 
 // key, label, statuses sent to the API, balance field, colour
 const VIEWS = [
@@ -52,8 +53,8 @@ const BalanceDetailModal = ({ row, initialView = 'given', onClose, onOpenTag }) 
   }, [queryKey, row]);
 
   if (!row) return null;
-  const title = row.companyName || row.companyId || 'All companies';
-  const subtitle = row.tagTypeName || 'All tag types';
+  const title = row.companyName || row.companyId || tr('All companies');
+  const subtitle = row.tagTypeName || tr('All tag types');
   const showType = !row.tagTypeId;
   const showCompany = !row.companyId;
 
@@ -74,7 +75,7 @@ const BalanceDetailModal = ({ row, initialView = 'given', onClose, onOpenTag }) 
                 onClick={() => setView(key)}
                 aria-pressed={view === key}
               >
-                <small className="d-block" style={{ opacity: 0.8 }}>{label}</small>
+                <small className="d-block" style={{ opacity: 0.8 }}>{tr(label)}</small>
                 <span className="fs-4 fw-bold" style={view === key ? undefined : { color }}>{formatNumber(row[field])}</span>
               </button>
             </div>
@@ -82,14 +83,14 @@ const BalanceDetailModal = ({ row, initialView = 'given', onClose, onOpenTag }) 
         </div>
         {row.low && (
           <div className="alert alert-danger py-2">
-            Low stock: {formatNumber(row.remainingCount)} remaining, minimum is {formatNumber(row.minimum)}.
+            {tr('Low stock: {n} remaining, minimum is {min}.', { n: formatNumber(row.remainingCount), min: formatNumber(row.minimum) })}
           </div>
         )}
 
         <div className="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-2">
           <input
             className="form-control form-control-sm" style={{ maxWidth: 260 }} value={search}
-            onChange={(e) => setSearch(e.target.value)} placeholder="Find a tag code (starts with)…" aria-label="Find a tag code"
+            onChange={(e) => setSearch(e.target.value)} placeholder={tr('Find a tag code (starts with)…')} aria-label={tr('Find a tag code')}
           />
           <div className="d-flex align-items-center gap-2">
             <PageSize value={limit} onChange={setLimit} />
@@ -101,14 +102,14 @@ const BalanceDetailModal = ({ row, initialView = 'given', onClose, onOpenTag }) 
           <table className="table table-sm">
             <thead>
               <tr>
-                <th>Tag code</th>
-                {showType && <th>Type</th>}
-                {showCompany && <th>Company</th>}
-                <th>Status</th>
-                <th>Allocation</th>
-                <th>Used in / void reason</th>
-                <th>Used at</th>
-                <th>Used by</th>
+                <th>{tr('Tag code')}</th>
+                {showType && <th>{tr('Type')}</th>}
+                {showCompany && <th>{tr('Company')}</th>}
+                <th>{tr('Status')}</th>
+                <th>{tr('Allocation')}</th>
+                <th>{tr('Used in / void reason')}</th>
+                <th>{tr('Used at')}</th>
+                <th>{tr('Used by')}</th>
               </tr>
             </thead>
             <tbody>

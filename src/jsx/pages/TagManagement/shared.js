@@ -1,6 +1,6 @@
 import React from 'react';
 import Select from 'react-select';
-import moment from 'moment';
+import { localMoment, tr } from './i18n';
 
 export const PAGE_SIZE = 25;
 
@@ -32,10 +32,10 @@ const BADGE = {
 };
 
 export const StatusBadge = ({ status }) => (
-  <span className={`badge light ${BADGE[status] || 'badge-secondary'}`}>{status}</span>
+  <span className={`badge light ${BADGE[status] || 'badge-secondary'}`}>{tr(status)}</span>
 );
 
-export const formatDate = (value) => (value ? moment(value).format('DD MMM YYYY, HH:mm') : '—');
+export const formatDate = (value) => (value ? localMoment(value).format('DD MMM YYYY, HH:mm') : '—');
 
 export const formatNumber = (value) => Number(value || 0).toLocaleString();
 
@@ -58,18 +58,21 @@ export const fieldLabel = {
   marginBottom: '6px',
 };
 
+// Plain text is translated here, so callers can pass English strings
+const text = (value) => (typeof value === 'string' ? tr(value) : value);
+
 export const Field = ({ label, hint, children }) => (
   <div className="mb-3">
-    <label style={fieldLabel}>{label}</label>
+    <label style={fieldLabel}>{text(label)}</label>
     {children}
-    {hint && <small className="text-muted d-block mt-1">{hint}</small>}
+    {hint && <small className="text-muted d-block mt-1">{text(hint)}</small>}
   </div>
 );
 
 export const TableMessage = ({ colSpan, loading, children }) => (
   <tr>
     <td colSpan={colSpan} className="text-center py-4 text-muted">
-      {loading ? <span className="spinner-border spinner-border-sm text-primary" role="status" /> : children}
+      {loading ? <span className="spinner-border spinner-border-sm text-primary" role="status" /> : text(children)}
     </td>
   </tr>
 );
@@ -82,17 +85,17 @@ export const Pagination = ({ page, limit, total, onChange }) => {
   return (
     <div className="d-flex justify-content-between align-items-center mt-3 flex-wrap gap-2">
       <small className="text-muted">
-        Showing {formatNumber(from)}–{formatNumber(to)} of {formatNumber(total)}
+        {tr('Showing {from}–{to} of {total}', { from: formatNumber(from), to: formatNumber(to), total: formatNumber(total) })}
       </small>
       <div className="btn-group">
         <button type="button" className="btn btn-sm btn-outline-primary" disabled={page <= 1} onClick={() => onChange(page - 1)}>
-          ‹ Previous
+          ‹ {tr('Previous')}
         </button>
         <span className="btn btn-sm btn-outline-primary disabled">
           {page} / {pages}
         </span>
         <button type="button" className="btn btn-sm btn-outline-primary" disabled={page >= pages} onClick={() => onChange(page + 1)}>
-          Next ›
+          {tr('Next')} ›
         </button>
       </div>
     </div>
@@ -121,7 +124,7 @@ export const selectStyles = {
 };
 
 /** Searchable company picker; `companies` comes from tagApi.companies(). */
-export const CompanySelect = ({ companies, value, onChange, isClearable = false, placeholder = 'Select a company…' }) => {
+export const CompanySelect = ({ companies, value, onChange, isClearable = false, placeholder }) => {
   const options = companies.map((c) => ({
     value: c.id,
     label: c.name || c.id,
@@ -132,7 +135,8 @@ export const CompanySelect = ({ companies, value, onChange, isClearable = false,
       value={options.find((o) => o.value === value) || null}
       onChange={(option) => onChange(option ? option.value : '')}
       isClearable={isClearable}
-      placeholder={placeholder}
+      placeholder={placeholder || tr('Select a company…')}
+      noOptionsMessage={() => tr('No companies')}
       styles={selectStyles}
     />
   );
@@ -140,7 +144,7 @@ export const CompanySelect = ({ companies, value, onChange, isClearable = false,
 
 export const TypeSelect = ({ types, value, onChange, allLabel }) => (
   <select className="form-control" value={value} onChange={(e) => onChange(e.target.value)}>
-    {allLabel && <option value="">{allLabel}</option>}
+    {allLabel && <option value="">{text(allLabel)}</option>}
     {types.map((t) => (
       <option key={t.id} value={t.id}>
         {t.name}

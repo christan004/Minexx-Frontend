@@ -10,6 +10,7 @@ import {
   DateRangeFilter, ExportButtons, FilterPanel, MultiSelect, PageSize, SortTh, TextFilter, TotalsBar,
   resolveRange, toQuery, useUrlFilters,
 } from './reports';
+import { tr } from './i18n';
 
 const MAX_VOID_CODES = 1000;
 const MAX_LOOKUP_CODES = 5000;
@@ -42,7 +43,7 @@ const VoidTagsModal = ({ show, initialCodes, onClose, onVoided }) => {
     setError(null);
     try {
       const result = await tagApi.voidTags(codes, reason.trim());
-      if (result.voided.length > 0) toast.success(`${result.voided.length} tag(s) voided`);
+      if (result.voided.length > 0) toast.success(tr('{n} tag(s) voided', { n: result.voided.length }));
       if (result.rejected.length > 0) {
         // Keep the modal open so the user sees which codes were skipped
         setRejected(result.rejected);
@@ -61,36 +62,36 @@ const VoidTagsModal = ({ show, initialCodes, onClose, onVoided }) => {
   return (
     <Modal show={show} onHide={() => !saving && onClose()} centered>
       <Modal.Header closeButton>
-        <Modal.Title>Void tags</Modal.Title>
+        <Modal.Title>{tr('Void tags')}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {error && <div className="alert alert-danger">{error}</div>}
         {rejected.length > 0 && (
           <div className="alert alert-warning">
-            These tags were not voided:
+            {tr('These tags were not voided:')}
             <ul className="mb-0 mt-1">
-              {rejected.map((r) => <li key={r.tagCode}><code>{r.tagCode}</code> — {r.reason}</li>)}
+              {rejected.map((r) => <li key={r.tagCode}><code>{r.tagCode}</code> — {tr(r.reason)}</li>)}
             </ul>
           </div>
         )}
-        <p className="text-muted">Lost or damaged tags can be voided while they are available or assigned. Voiding cannot be undone.</p>
-        <Field label={`Tag codes (${codes.length})`} hint="One per line, or separated by commas or spaces">
+        <p className="text-muted">{tr('Lost or damaged tags can be voided while they are available or assigned. Voiding cannot be undone.')}</p>
+        <Field label={tr('Tag codes ({n})', { n: codes.length })} hint="One per line, or separated by commas or spaces">
           <textarea className="form-control" rows={6} value={codesText} onChange={(e) => setCodesText(e.target.value)} style={{ fontFamily: 'monospace' }} />
         </Field>
         <Field label="Reason">
-          <input className="form-control" maxLength={255} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="e.g. damaged during transport" />
+          <input className="form-control" maxLength={255} value={reason} onChange={(e) => setReason(e.target.value)} placeholder={tr('e.g. damaged during transport')} />
         </Field>
-        {codes.length > MAX_VOID_CODES && <div className="alert alert-warning mb-0">At most {MAX_VOID_CODES} tags can be voided at once.</div>}
+        {codes.length > MAX_VOID_CODES && <div className="alert alert-warning mb-0">{tr('At most {n} tags can be voided at once.', { n: MAX_VOID_CODES })}</div>}
       </Modal.Body>
       <Modal.Footer>
-        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>Close</button>
+        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={saving}>{tr('Close')}</button>
         <button
           type="button"
           className="btn btn-danger"
           onClick={submit}
           disabled={saving || codes.length === 0 || codes.length > MAX_VOID_CODES || reason.trim().length < 3}
         >
-          {saving ? 'Voiding…' : `Void ${codes.length} tag(s)`}
+          {saving ? tr('Voiding…') : tr('Void {n} tag(s)', { n: codes.length })}
         </button>
       </Modal.Footer>
     </Modal>
@@ -131,11 +132,11 @@ const BulkLookupModal = ({ show, onClose, onOpenTag }) => {
   };
 
   const download = () => {
-    const header = ['Tag code', 'Status', 'Tag type', 'Company', 'Batch', 'Used in', 'Record ID', 'Used at'];
+    const header = ['Tag code', 'Status', 'Tag type', 'Company', 'Batch', 'Used in', 'Record ID', 'Used at'].map((h) => tr(h));
     const lines = [
-      ...result.items.map((t) => [t.tagCode, t.status, t.tagTypeName, t.companyName || t.companyId || '', t.batchCode,
+      ...result.items.map((t) => [t.tagCode, tr(t.status), t.tagTypeName, t.companyName || t.companyId || '', t.batchCode,
         t.usedRefTable || '', t.usedRefId || '', t.usedAt ? formatDate(t.usedAt) : '']),
-      ...result.notFound.map((code) => [code, 'NOT FOUND', '', '', '', '', '', '']),
+      ...result.notFound.map((code) => [code, tr('NOT FOUND'), '', '', '', '', '', '']),
     ];
     const blob = new Blob([`﻿${[header, ...lines].map((row) => row.map(csvCell).join(',')).join('\r\n')}`], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -149,11 +150,11 @@ const BulkLookupModal = ({ show, onClose, onOpenTag }) => {
   return (
     <Modal show={show} onHide={() => !busy && onClose()} centered size="lg">
       <Modal.Header closeButton>
-        <Modal.Title>Look up many tags</Modal.Title>
+        <Modal.Title>{tr('Look up many tags')}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         {error && <div className="alert alert-danger">{error}</div>}
-        <Field label={`Tag codes (${formatNumber(codes.length)})`} hint={`One per line, or separated by commas or spaces. At most ${formatNumber(MAX_LOOKUP_CODES)}.`}>
+        <Field label={tr('Tag codes ({n})', { n: formatNumber(codes.length) })} hint={tr('One per line, or separated by commas or spaces. At most {n}.', { n: formatNumber(MAX_LOOKUP_CODES) })}>
           <textarea className="form-control" rows={5} value={text} style={{ fontFamily: 'monospace' }}
             onChange={(e) => { setText(e.target.value); setResult(null); }} />
           <input type="file" accept=".csv,.txt" className="form-control form-control-sm mt-2" onChange={loadFile} />
@@ -167,12 +168,12 @@ const BulkLookupModal = ({ show, onClose, onOpenTag }) => {
             ]} />
             {result.notFound.length > 0 && (
               <div className="alert alert-warning" style={{ maxHeight: 90, overflowY: 'auto' }}>
-                Not found: <span style={{ fontFamily: 'monospace' }}>{result.notFound.join(', ')}</span>
+                {tr('Not found')}: <span style={{ fontFamily: 'monospace' }}>{result.notFound.join(', ')}</span>
               </div>
             )}
             <div className="table-responsive" style={{ maxHeight: 360, overflowY: 'auto' }}>
               <table className="table table-sm mb-0">
-                <thead><tr><th>Tag code</th><th>Status</th><th>Type</th><th>Company</th><th>Used in</th><th>Used at</th></tr></thead>
+                <thead><tr><th>{tr('Tag code')}</th><th>{tr('Status')}</th><th>{tr('Type')}</th><th>{tr('Company')}</th><th>{tr('Used in')}</th><th>{tr('Used at')}</th></tr></thead>
                 <tbody>
                   {result.items.map((t) => (
                     <tr key={t.id}>
@@ -193,10 +194,10 @@ const BulkLookupModal = ({ show, onClose, onOpenTag }) => {
         )}
       </Modal.Body>
       <Modal.Footer>
-        {result && <button type="button" className="btn btn-outline-primary" onClick={download}><i className="fa fa-download me-2" />Download results</button>}
-        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>Close</button>
+        {result && <button type="button" className="btn btn-outline-primary" onClick={download}><i className="fa fa-download me-2" />{tr('Download results')}</button>}
+        <button type="button" className="btn btn-outline-secondary" onClick={onClose} disabled={busy}>{tr('Close')}</button>
         <button type="button" className="btn btn-primary" onClick={run} disabled={busy || codes.length === 0 || codes.length > MAX_LOOKUP_CODES}>
-          {busy ? 'Looking up…' : 'Look up'}
+          {busy ? tr('Looking up…') : tr('Look up')}
         </button>
       </Modal.Footer>
     </Modal>
@@ -248,23 +249,23 @@ const TagsTab = ({ types, companies, isAdmin, onChanged, onOpenTag, refreshKey }
   const companyOptions = companies.map((c) => ({ value: c.id, label: c.name || c.id }));
   const statusOptions = TAG_STATUSES.map((s) => ({ value: s, label: s }));
   const usedInOptions = USED_IN.map((t) => ({ value: t, label: t }));
-  const presetLabel = filters.batchId ? `batch #${filters.batchId}` : filters.allocationId ? `allocation #${filters.allocationId}` : null;
+  const presetLabel = filters.batchId ? tr('batch #{id}', { id: filters.batchId }) : filters.allocationId ? tr('allocation #{id}', { id: filters.allocationId }) : null;
   const sortProps = { filters, onSort: setFilters };
   const colSpan = isAdmin ? 10 : 9;
 
   return (
     <div className="card">
       <div className="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-        <h4 className="card-title mb-0">Tags</h4>
+        <h4 className="card-title mb-0">{tr('Tags')}</h4>
         <div className="d-flex gap-2 flex-wrap">
           <button type="button" className="btn btn-outline-primary btn-sm" onClick={() => setShowLookup(true)}>
-            <i className="fa fa-search me-2" />Look up many tags
+            <i className="fa fa-search me-2" />{tr('Look up many tags')}
           </button>
           <ExportButtons report="tags" params={query} disabled={data.total === 0} />
           {isAdmin && (
             <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => setShowVoid(true)}>
               <i className="fa fa-ban me-2" />
-              {selected.length > 0 ? `Void ${selected.length} selected` : 'Void tags'}
+              {selected.length > 0 ? tr('Void {n} selected', { n: selected.length }) : tr('Void tags')}
             </button>
           )}
         </div>
@@ -272,8 +273,8 @@ const TagsTab = ({ types, companies, isAdmin, onChanged, onOpenTag, refreshKey }
       <div className="card-body">
         {presetLabel && (
           <div className="alert alert-info d-flex justify-content-between align-items-center py-2">
-            <span>Showing tags of {presetLabel}</span>
-            <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setFilters({ batchId: '', allocationId: '' })}>Show all tags</button>
+            <span>{tr('Showing tags of {what}', { what: presetLabel })}</span>
+            <button type="button" className="btn btn-sm btn-outline-primary" onClick={() => setFilters({ batchId: '', allocationId: '' })}>{tr('Show all tags')}</button>
           </div>
         )}
 
@@ -332,7 +333,7 @@ const TagsTab = ({ types, companies, isAdmin, onChanged, onOpenTag, refreshKey }
               <tr>
                 {isAdmin && (
                   <th style={{ width: 36 }}>
-                    <input type="checkbox" checked={allSelected} onChange={toggleAll} disabled={voidableOnPage.length === 0} aria-label="Select all on this page" />
+                    <input type="checkbox" checked={allSelected} onChange={toggleAll} disabled={voidableOnPage.length === 0} aria-label={tr('Select all on this page')} />
                   </th>
                 )}
                 <SortTh label="Tag code" sortKey="tagCode" {...sortProps} />
@@ -340,10 +341,10 @@ const TagsTab = ({ types, companies, isAdmin, onChanged, onOpenTag, refreshKey }
                 <SortTh label="Status" sortKey="status" {...sortProps} />
                 <SortTh label="Company" sortKey="companyName" {...sortProps} />
                 <SortTh label="Batch" sortKey="batchCode" {...sortProps} />
-                <th>Allocation</th>
+                <th>{tr('Allocation')}</th>
                 <SortTh label="Used in" sortKey="usedRefTable" {...sortProps} />
                 <SortTh label="Used at" sortKey="usedAt" {...sortProps} />
-                <th>Used by</th>
+                <th>{tr('Used by')}</th>
               </tr>
             </thead>
             <tbody>
@@ -358,7 +359,7 @@ const TagsTab = ({ types, companies, isAdmin, onChanged, onOpenTag, refreshKey }
                         checked={selected.includes(t.tagCode)}
                         onChange={() => toggle(t.tagCode)}
                         disabled={!VOIDABLE.includes(t.status)}
-                        aria-label={`Select ${t.tagCode}`}
+                        aria-label={tr('Select {code}', { code: t.tagCode })}
                       />
                     </td>
                   )}
@@ -374,7 +375,7 @@ const TagsTab = ({ types, companies, isAdmin, onChanged, onOpenTag, refreshKey }
                   <td>{t.allocationCode || '—'}</td>
                   <td>
                     {t.usedRefTable ? <>{t.usedRefTable}<br /><small className="text-muted">{t.usedRefId}</small></>
-                      : t.status === 'VOID' ? <small className="text-muted">Void: {t.voidReason}</small> : '—'}
+                      : t.status === 'VOID' ? <small className="text-muted">{tr('Void')}: {t.voidReason}</small> : '—'}
                   </td>
                   <td className="text-nowrap"><small>{t.usedAt ? formatDate(t.usedAt) : '—'}</small></td>
                   <td><small>{t.usedBy || '—'}</small></td>

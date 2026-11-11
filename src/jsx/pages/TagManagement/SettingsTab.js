@@ -9,6 +9,7 @@ import { toast } from 'react-toastify';
 import { tagApi, errorMessage } from './api';
 import { CompanySelect, Field, TableMessage, TypeSelect, UNCLASSIFIED_CODE, formatDate } from './shared';
 import NotificationContacts from './NotificationContacts';
+import { tr } from './i18n';
 
 const exampleCode = (prefix, digits) => {
   const n = Number(digits) || 0;
@@ -45,7 +46,7 @@ const TypeSettingsRow = ({ type, onSaved }) => {
         minAvailable: Number(form.minAvailable) || 0,
         companyMinDefault: Number(form.companyMinDefault) || 0,
       });
-      toast.success(`${form.name.trim()} settings saved`);
+      toast.success(tr('{name} settings saved', { name: form.name.trim() }));
       onSaved();
     } catch (err) {
       toast.error(errorMessage(err));
@@ -60,8 +61,8 @@ const TypeSettingsRow = ({ type, onSaved }) => {
         {editingName ? (
           <div className="d-flex align-items-center gap-2">
             <input className="form-control" style={{ width: 200 }} maxLength={100} value={form.name} autoFocus
-              onChange={(e) => set({ name: e.target.value })} aria-label="Tag type name" />
-            <button type="button" className="btn btn-link btn-sm p-0" title="Undo name change"
+              onChange={(e) => set({ name: e.target.value })} aria-label={tr('Tag type name')} />
+            <button type="button" className="btn btn-link btn-sm p-0" title={tr('Undo name change')}
               onClick={() => { set({ name: type.name }); setEditingName(false); }}>
               <i className="fa fa-undo" />
             </button>
@@ -69,17 +70,17 @@ const TypeSettingsRow = ({ type, onSaved }) => {
         ) : (
           <div className="d-flex align-items-center gap-2">
             <span className="fw-bold">{form.name}</span>
-            <button type="button" className="btn btn-outline-primary btn-xs btn-sm py-0 px-2" title="Rename this tag type" onClick={() => setEditingName(true)}>
-              <i className="fa fa-pen me-1" />Edit
+            <button type="button" className="btn btn-outline-primary btn-xs btn-sm py-0 px-2" title={tr('Rename this tag type')} onClick={() => setEditingName(true)}>
+              <i className="fa fa-pen me-1" />{tr('Edit')}
             </button>
           </div>
         )}
         <small className="text-muted" style={{ fontFamily: 'monospace' }}>{type.code}</small>
-        {editingName && !nameValid && <small className="text-danger d-block">At least 2 characters</small>}
+        {editingName && !nameValid && <small className="text-danger d-block">{tr('At least 2 characters')}</small>}
       </td>
       <td>
         <input
-          className="form-control" style={{ width: 120 }} maxLength={20} placeholder="e.g. MB"
+          className="form-control" style={{ width: 120 }} maxLength={20} placeholder={tr('e.g. MB')}
           value={form.defaultPrefix}
           onChange={(e) => set({ defaultPrefix: e.target.value.replace(/[^A-Za-z0-9-]/g, '') })}
         />
@@ -99,7 +100,7 @@ const TypeSettingsRow = ({ type, onSaved }) => {
       </td>
       <td>
         <button type="button" className="btn btn-primary btn-sm" disabled={!changed || !nameValid || saving} onClick={save}>
-          {saving ? 'Saving…' : 'Save'}
+          {saving ? tr('Saving…') : tr('Save')}
         </button>
       </td>
     </tr>
@@ -134,7 +135,7 @@ const CompanyMinimums = ({ types, companies, refreshKey, onChanged }) => {
         tagTypeId: Number(form.tagTypeId),
         minRemaining: Number(form.minRemaining),
       });
-      toast.success('Company minimum saved');
+      toast.success(tr('Company minimum saved'));
       setForm({ companyId: '', tagTypeId: '', minRemaining: '' });
       load();
       onChanged();
@@ -146,10 +147,10 @@ const CompanyMinimums = ({ types, companies, refreshKey, onChanged }) => {
   };
 
   const remove = async (row) => {
-    if (!window.confirm(`Remove the minimum for ${row.companyName || row.companyId} (${row.tagTypeName})? The default will apply again.`)) return;
+    if (!window.confirm(tr('Remove the minimum for {company} ({type})? The default will apply again.', { company: row.companyName || row.companyId, type: row.tagTypeName }))) return;
     try {
       await tagApi.removeCompanyMinimum(row.companyId, row.tagTypeId);
-      toast.success('Company minimum removed');
+      toast.success(tr('Company minimum removed'));
       load();
       onChanged();
     } catch (err) {
@@ -160,11 +161,11 @@ const CompanyMinimums = ({ types, companies, refreshKey, onChanged }) => {
   return (
     <div className="card">
       <div className="card-header">
-        <h4 className="card-title mb-0">Company minimums</h4>
+        <h4 className="card-title mb-0">{tr('Company minimums')}</h4>
       </div>
       <div className="card-body">
         <p className="text-muted">
-          Give one company its own minimum instead of the default above. Use 0 to turn the alert off for that company.
+          {tr('Give one company its own minimum instead of the default above. Use 0 to turn the alert off for that company.')}
         </p>
         <div className="row align-items-end">
           <div className="col-md-5">
@@ -178,14 +179,14 @@ const CompanyMinimums = ({ types, companies, refreshKey, onChanged }) => {
             </Field>
           </div>
           <div className="col-md-2">
-            <Field label="Minimum" hint={form.tagTypeId ? `Default: ${defaultFor(form.tagTypeId)}` : null}>
+            <Field label="Minimum" hint={form.tagTypeId ? tr('Default: {n}', { n: defaultFor(form.tagTypeId) }) : null}>
               <input type="number" min={0} className="form-control" value={form.minRemaining}
                 onChange={(e) => set({ minRemaining: e.target.value })} />
             </Field>
           </div>
           <div className="col-md-2 mb-3">
             <button type="button" className="btn btn-primary w-100" disabled={!canSave} onClick={save}>
-              {saving ? 'Saving…' : 'Save'}
+              {saving ? tr('Saving…') : tr('Save')}
             </button>
           </div>
         </div>
@@ -194,11 +195,11 @@ const CompanyMinimums = ({ types, companies, refreshKey, onChanged }) => {
           <table className="table">
             <thead>
               <tr>
-                <th>Company</th>
-                <th>Tag type</th>
-                <th>Minimum</th>
-                <th>Default</th>
-                <th>Changed by</th>
+                <th>{tr('Company')}</th>
+                <th>{tr('Tag type')}</th>
+                <th>{tr('Minimum')}</th>
+                <th>{tr('Default')}</th>
+                <th>{tr('Changed by')}</th>
                 <th />
               </tr>
             </thead>
@@ -210,11 +211,11 @@ const CompanyMinimums = ({ types, companies, refreshKey, onChanged }) => {
                 <tr key={`${row.companyId}-${row.tagTypeId}`}>
                   <td>{row.companyName || row.companyId}</td>
                   <td>{row.tagTypeName}</td>
-                  <td className="fw-bold">{row.minRemaining === 0 ? 'Off' : row.minRemaining}</td>
+                  <td className="fw-bold">{row.minRemaining === 0 ? tr('Off') : row.minRemaining}</td>
                   <td className="text-muted">{defaultFor(row.tagTypeId)}</td>
                   <td><small className="text-muted">{row.updatedBy}<br />{formatDate(row.updatedAt)}</small></td>
                   <td className="text-end">
-                    <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => remove(row)}>Remove</button>
+                    <button type="button" className="btn btn-outline-danger btn-sm" onClick={() => remove(row)}>{tr('Remove')}</button>
                   </td>
                 </tr>
               ))}
@@ -233,26 +234,26 @@ const SettingsTab = ({ types: allTypes, companies, refreshKey, onChanged }) => {
   <>
     <div className="card">
       <div className="card-header">
-        <h4 className="card-title mb-0">Tag type settings</h4>
+        <h4 className="card-title mb-0">{tr('Tag type settings')}</h4>
       </div>
       <div className="card-body">
         <p className="text-muted mb-1">
-          <strong>Prefix</strong> and <strong>digits</strong> are filled in automatically when you generate a batch (you can still change them for one batch).
+          <strong>{tr('Prefix')}</strong> {tr('and')} <strong>{tr('digits')}</strong> {tr('are filled in automatically when you generate a batch (you can still change them for one batch).')}
         </p>
         <p className="text-muted">
-          <strong>System minimum</strong>: alert when tags not yet given to any company fall to this number or below.{' '}
-          <strong>Company minimum</strong>: alert when a company&apos;s unused tags fall to this number or below. 0 = no alert.
+          <strong>{tr('System minimum')}</strong>: {tr('alert when tags not yet given to any company fall to this number or below.')}{' '}
+          <strong>{tr('Company minimum')}</strong>: {tr("alert when a company's unused tags fall to this number or below. 0 = no alert.")}
         </p>
         <div className="table-responsive">
           <table className="table">
             <thead>
               <tr>
-                <th>Tag type</th>
-                <th>Prefix</th>
-                <th>Digits</th>
-                <th>First tag</th>
-                <th>System minimum</th>
-                <th>Company minimum (default)</th>
+                <th>{tr('Tag type')}</th>
+                <th>{tr('Prefix')}</th>
+                <th>{tr('Digits')}</th>
+                <th>{tr('First tag')}</th>
+                <th>{tr('System minimum')}</th>
+                <th>{tr('Company minimum (default)')}</th>
                 <th />
               </tr>
             </thead>
