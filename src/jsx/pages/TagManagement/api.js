@@ -34,6 +34,12 @@ export const tagApi = {
     del(`company-minimums/${encodeURIComponent(companyId)}/${tagTypeId}`),
   stockAlerts: () => get('stock-alerts'),
 
+  // Low stock e-mails (admin): status, test, check now, log
+  emailStatus: () => get('notifications/email-status'),
+  sendTestEmail: (to) => post('notifications/test-email', { to }),
+  checkLowStock: () => post('notifications/check'),
+  emailLog: (filters) => get('notifications/email-log', clean(filters)),
+
   // People to notify about low stock (SYSTEM = Minexx, COMPANY = a company's contact)
   notificationContacts: (filters) => get('notification-contacts', clean(filters)),
   createNotificationContact: (body) => post('notification-contacts', body),

@@ -3,13 +3,14 @@
  * - Minexx recipients (SYSTEM): receive every low stock alert.
  * - Company contacts (COMPANY): a company's representative or person in charge; receive that company's alerts.
  * A contact can have several emails (the first one is the main email); all of them get the alerts.
- * Emails are not sent yet; the list is ready for when email is configured.
+ * Low stock e-mails go to these people (see EmailNotifications for the test e-mail and the log).
  */
 import React, { useEffect, useState } from 'react';
 import { toast } from 'react-toastify';
 import { tagApi, errorMessage } from './api';
 import { CompanySelect, Field, TableMessage, formatDate } from './shared';
 import { tr } from './i18n';
+import EmailNotifications from './EmailNotifications';
 
 const ROLES = ['Representative', 'In charge', 'Manager', 'Other'];
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -233,10 +234,7 @@ const ContactsCard = ({ scope, title, intro, companies, refreshKey }) => {
 
 const NotificationContacts = ({ companies, refreshKey }) => (
   <>
-    <div className="alert alert-info">
-      <i className="fa fa-envelope me-2" />
-      {tr('Emails are not sent yet. The people below are saved now, so low stock emails can start as soon as email is configured.')}
-    </div>
+    <EmailNotifications refreshKey={refreshKey} />
     <ContactsCard
       scope="SYSTEM"
       title="Minexx notification recipients"

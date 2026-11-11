@@ -441,6 +441,35 @@ export const translations = {
     "Company contacts": "Contacts des entreprises",
     "A company’s representative or person in charge. They receive the low stock alerts of their own company. A company can have several contacts, and each contact can have several emails.":
       "Le représentant ou le responsable d'une entreprise. Il reçoit les alertes de stock faible de sa propre entreprise. Une entreprise peut avoir plusieurs contacts, et chaque contact plusieurs e-mails.",
+    // Email notifications card
+    "Email notifications": "Notifications par e-mail",
+    "Low stock e-mails are on. They are sent from {from} when a stock reaches its minimum, once per drop, to the people below.":
+      "Les e-mails de stock faible sont activés. Ils sont envoyés depuis {from} quand un stock atteint son minimum, une fois par baisse, aux personnes ci-dessous.",
+    "E-mail is not set up on the server yet (TAG_MAIL_USER and TAG_MAIL_PASS). Nothing is sent until it is.":
+      "L'e-mail n'est pas encore configuré sur le serveur (TAG_MAIL_USER et TAG_MAIL_PASS). Rien n'est envoyé tant qu'il ne l'est pas.",
+    "Send a test e-mail to": "Envoyer un e-mail de test à",
+    "Send test e-mail": "Envoyer l'e-mail de test",
+    "Sending…": "Envoi…",
+    "Check low stock now": "Vérifier le stock faible maintenant",
+    "E-mails new low stock alerts now instead of waiting for the next automatic check":
+      "Envoie maintenant les nouvelles alertes de stock faible sans attendre la prochaine vérification automatique",
+    "Test e-mail sent to {to}. Check the inbox (and spam).": "E-mail de test envoyé à {to}. Vérifiez la boîte de réception (et les spams).",
+    "E-mail is not set up on the server, so nothing was sent.": "L'e-mail n'est pas configuré sur le serveur, rien n'a été envoyé.",
+    "No new low stock. {n} alert(s) already e-mailed earlier.": "Aucun nouveau stock faible. {n} alerte(s) déjà envoyée(s) plus tôt.",
+    "{alerts} new low stock alert(s): {sent} e-mail(s) sent, {failed} failed.": "{alerts} nouvelle(s) alerte(s) de stock faible : {sent} e-mail(s) envoyé(s), {failed} en échec.",
+    "{n} alert(s) have nobody to send to. Add contacts below.": "{n} alerte(s) sans destinataire. Ajoutez des contacts ci-dessous.",
+    "E-mail log": "Journal des e-mails",
+    "To": "À",
+    "Subject": "Objet",
+    "Test": "Test",
+    "Sent": "Envoyé",
+    "Failed": "Échec",
+    "No e-mails sent yet": "Aucun e-mail envoyé pour l'instant",
+    "Not yet given (Minexx)": "Pas encore données (Minexx)",
+    "{n} left (minimum {min})": "{n} restantes (minimum {min})",
+    "E-mail is not configured on the server (TAG_MAIL_USER and TAG_MAIL_PASS)": "L'e-mail n'est pas configuré sur le serveur (TAG_MAIL_USER et TAG_MAIL_PASS)",
+    "Give the e-mail address to send the test to": "Indiquez l'adresse e-mail à laquelle envoyer le test",
+
     "Name": "Nom",
     "Full name": "Nom complet",
     "Email": "E-mail",
@@ -521,5 +550,6 @@ export const messagePatterns = {
     [/^At most (\d+) tags at once$/, "Au maximum $1 étiquettes en une fois"],
     [/^(\d+) digits is too short for the number (\d+)$/, "$1 chiffres, c'est trop court pour le numéro $2"],
     [/^Request failed with status code (\d+)$/, "La requête a échoué (code $1)"],
+    [/^The test e-mail could not be sent: (.+)$/, "L'e-mail de test n'a pas pu être envoyé : $1"],
   ],
 };

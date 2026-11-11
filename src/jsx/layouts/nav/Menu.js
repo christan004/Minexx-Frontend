@@ -30,11 +30,6 @@ export const RootMenu = [
         to: 'mines',
     },
     {
-        title:'Tags',
-        iconStyle: <i className="fa fa-tags"></i>,
-        to: 'Tags',
-    },
-    {
         title:'Tag Management',
         iconStyle: <i className="flaticon-381-price-tag"></i>,
         to: 'tag-management',
