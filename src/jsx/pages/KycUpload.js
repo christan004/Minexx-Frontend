@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { filePreviewUrl, fileDownloadUrl } from '../../services/FileUrls';
-import { getAPIEndpoint } from '../../services/AccessControl';
 import { Tab, Nav, ListGroup, ProgressBar, Container, Row, Col, Modal, Dropdown } from 'react-bootstrap';
 import { Link, useParams, useNavigate } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -131,7 +129,7 @@ const KycUpload = ({ language }) => {
       formData.append('documentType', currentDocumentType);
 
       // Send the file to the server
-      const response = await fetch(`${getAPIEndpoint('DRC')}upload/${id}`, {
+      const response = await fetch(`https://upload-p7n5ing2cq-uc.a.run.app/?companyId=${id}`, {
         method: 'POST',
         headers: {
           'x-platform': platform
@@ -286,7 +284,7 @@ const KycUpload = ({ language }) => {
                                   <a
                                     target="_blank"
                                     className="btn btn-info"
-                                    href={filePreviewUrl(document.file)}
+                                    href={`https://drive.google.com/file/d/${document.file}/preview`}
                                     rel="noreferrer"
                                   >
                                     View
@@ -294,7 +292,7 @@ const KycUpload = ({ language }) => {
                                   <a
                                     target="_blank"
                                     className="btn btn-primary"
-                                    href={fileDownloadUrl(document.file)}
+                                    href={`https://drive.usercontent.google.com/download?id=${document.file}&export=download&authuser=0`}
                                     rel="noreferrer"
                                   >
                                     Download

@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from 'react';
-import { getAPIEndpoint } from '../../../services/AccessControl';
 import axiosInstance from '../../../services/AxiosInstance';
 // import { baseURL_ } from '../../../config';
 
@@ -9,7 +8,7 @@ function LiveScreenCard({ language, country, access,user }) {
   const [purchaseData, setPurchaseData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const baseURL_ = getAPIEndpoint('Togo');
+  const baseURL_="https://minexxapi-togo-clone-p7n5ing2cq-uc.a.run.app/"
 
   const t = (key) => {
     const translations = {

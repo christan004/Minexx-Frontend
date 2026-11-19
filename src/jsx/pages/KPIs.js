@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { getAPIEndpoint } from '../../services/AccessControl';
 // import { baseURL_ } from '../../config';
 import axiosInstance from '../../services/AxiosInstance';
 import { translations } from './KpiTranslation';
 
-const baseURL_ = getAPIEndpoint('DRC');
+const baseURL_="https://minexxapi-drc-p7n5ing2cq-uc.a.run.app/";
 
 const KPIs = ({ country, language }) => {
     const [selectedYear, setSelectedYear] = useState('2026');

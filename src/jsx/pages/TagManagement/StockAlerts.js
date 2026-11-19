@@ -45,7 +45,7 @@ const StockAlerts = ({ alerts, isAdmin, onOpenSettings }) => {
           <i className="fa fa-exclamation-triangle me-2" />
           {tr('Low tag stock ({n})', { n: lines.length })}
         </strong>
-        {isAdmin && (
+        {isAdmin && onOpenSettings && (
           <button type="button" className="btn btn-sm btn-outline-light" onClick={onOpenSettings}>
             {tr('Change minimums')}
           </button>

@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { getAPIEndpoint } from '../../../services/AccessControl';
 import { Send, MessageCircle, X, MinusCircle } from 'lucide-react';
 // import { OPENAI_API_KEY } from '../../../config'
 const ChatBot = () => {
@@ -14,7 +13,7 @@ const ChatBot = () => {
   const OPENAI_API_KEY=process.env.REACT_APP_OPENAI_API_KEY;
   const generateResponse = async (userMessage) => {
     try {
-      const response = await fetch(`${getAPIEndpoint('DRC')}openai-chat`, {
+      const response = await fetch('https://minexxapi-db-p7n5ing2cq-uc.a.run.app/openai-chat', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

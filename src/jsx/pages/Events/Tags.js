@@ -1,11 +1,10 @@
 import React, { useContext, useEffect, useState } from "react";
-import { getAPIEndpoint } from '../../../services/AccessControl';
 import { Link } from 'react-router-dom';
 import { ThemeContext } from "../../../context/ThemeContext";
 import axiosInstance from '../../../services/AxiosInstance';
 import { Segment, Loader } from 'semantic-ui-react';
 
-const baseURL_ = getAPIEndpoint('DRC');
+const baseURL_ = "https://minexxapi-drc-p7n5ing2cq-uc.a.run.app/";
 
 
 
