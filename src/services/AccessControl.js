@@ -6,10 +6,10 @@
 
 const ensureTrailingSlash = (url) => url.endsWith('/') ? url : `${url}/`;
 
-// process.env.REACT_APP_* is replaced with its value at build time; there is no
-// `process` object in the browser, so it must not be guarded with `typeof process`.
 const getDRCAPIEndpoint = () => {
-  const envEndpoint = process.env.REACT_APP_DRC_API_URL;
+  const envEndpoint = typeof process !== 'undefined'
+    ? process.env.REACT_APP_DRC_API_URL
+    : undefined;
 
   if (envEndpoint) {
     return ensureTrailingSlash(envEndpoint);
@@ -18,22 +18,15 @@ const getDRCAPIEndpoint = () => {
   if (typeof window !== 'undefined' && window.location?.protocol === 'https:') {
     return '/api/';
   }
+  
 
   return 'http://34.133.122.228:3500/';
-};
-
-const getTogoAPIEndpoint = () => {
-  const envEndpoint = process.env.REACT_APP_TOGO_API_URL;
-
-  return envEndpoint
-    ? ensureTrailingSlash(envEndpoint)
-    : 'https://minexxapi-togo-clone-p7n5ing2cq-uc.a.run.app/';
 };
 
 // API Endpoints for each country/mode
 const API_ENDPOINTS = {
   DRC: getDRCAPIEndpoint(),
-  Togo: getTogoAPIEndpoint(),
+  Togo: 'https://minexxapi-togo-clone-p7n5ing2cq-uc.a.run.app/',
 };
 
 // Default endpoint if country not found

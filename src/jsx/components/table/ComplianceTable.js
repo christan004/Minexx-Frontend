@@ -1,6 +1,4 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { filePreviewUrl, fileDownloadUrl } from '../../../services/FileUrls';
-import { getAPIEndpoint } from '../../../services/AccessControl';
 import React, { useEffect, useRef, useState } from "react";
 import { icon } from '@fortawesome/fontawesome-svg-core/import.macro'
 import { Link } from "react-router-dom";
@@ -59,7 +57,7 @@ const ComplianceTable = ({ documents, language, user, onDocumentUpdate }) => {
 
     try {
       const response = await fetch(
-        `${getAPIEndpoint('DRC')}document/file/${docId}`,
+        `https://minexxapi-drc-p7n5ing2cq-uc.a.run.app/document/file/${docId}`,
         {
           method: 'GET',
           headers: {
@@ -171,7 +169,7 @@ const ComplianceTable = ({ documents, language, user, onDocumentUpdate }) => {
     if (driveId) {
       return (
         <Link
-          to={fileDownloadUrl(driveId)}
+          to={`https://drive.usercontent.google.com/download?id=${driveId}&export=download&authuser=0`}
           title="Download"
           className="btn btn-primary light btn-sm mx-4 px-4"
         >
@@ -442,7 +440,7 @@ const ComplianceTable = ({ documents, language, user, onDocumentUpdate }) => {
         <Modal.Body>
           <iframe
             title={docu?.driveId}
-            src={filePreviewUrl(docu?.driveId)}
+            src={`https://drive.google.com/file/d/${docu?.driveId}/preview`}
             width="100%"
             height="600"
             allow="autoplay"

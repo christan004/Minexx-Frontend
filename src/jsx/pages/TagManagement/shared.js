@@ -39,13 +39,31 @@ export const formatDate = (value) => (value ? localMoment(value).format('DD MMM 
 
 export const formatNumber = (value) => Number(value || 0).toLocaleString();
 
-/** Admin = Minexx staff; the API only lets them generate, assign, return, void and cancel. */
-export const isAdminUser = () => {
+const readUser = () => {
   try {
-    return JSON.parse(localStorage.getItem('_authUsr'))?.type === 'minexx';
+    return JSON.parse(localStorage.getItem('_authUsr'));
   } catch (e) {
-    return false;
+    return null;
   }
+};
+
+/** Admin = Minexx staff; only they see the Settings tab (types, minimums, e-mails, contacts). */
+export const isAdminUser = () => readUser()?.type === 'minexx';
+
+/**
+ * Tag manager = every user who has Tag Management in the side menu (minexx, investors,
+ * regulators...): they can generate, assign, return, void and cancel, and see every company.
+ * Same rule as the API (MinexxAPI src/utils/tagRoles.js) and the SideBar menus.
+ */
+const NO_TAG_MENU_TYPES = ['buyer', 'buyers', 'buyer_rwanda', 'buyers_drc', 'integration'];
+export const canManageTags = () => {
+  const user = readUser();
+  if (!user || !user.type) return false;
+  if (user.type === 'minexx') return true;
+  if (user.access === 'Gold-Togo' || user.access === 'Gold_Togo') return false;
+  if (NO_TAG_MENU_TYPES.includes(user.type)) return false;
+  if (user.type === 'investor_drc' && user.name === 'jiujiangjx') return false;
+  return true;
 };
 
 export const fieldLabel = {

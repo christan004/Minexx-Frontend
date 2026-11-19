@@ -6,7 +6,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { tagApi, errorMessage } from './api';
-import { isAdminUser } from './shared';
+import { isAdminUser, canManageTags } from './shared';
 import { tr } from './i18n';
 import OverviewTab from './OverviewTab';
 import BatchesTab from './BatchesTab';
@@ -23,23 +23,26 @@ const NO_ALERTS = { system: [], companies: [] };
 
 const TABS = [
   { key: 'overview', label: 'Overview', icon: 'fa-chart-pie' },
-  { key: 'batches', label: 'Batches', icon: 'fa-layer-group', adminOnly: true },
+  { key: 'batches', label: 'Batches', icon: 'fa-layer-group', managerOnly: true },
   { key: 'allocations', label: 'Allocations', icon: 'fa-share-alt' },
   { key: 'tags', label: 'Tags', icon: 'fa-tag' },
   { key: 'balances', label: 'Balances', icon: 'fa-balance-scale' },
   // Hidden for now; remove `hidden` to bring these tabs back
   { key: 'issues', label: 'Tag Issues', icon: 'fa-exclamation-triangle', hidden: true },
-  { key: 'events', label: 'Audit Log', icon: 'fa-history', adminOnly: true, hidden: true },
+  { key: 'events', label: 'Audit Log', icon: 'fa-history', managerOnly: true, hidden: true },
+  // Settings stays for Minexx (type minexx) only
   { key: 'settings', label: 'Settings', icon: 'fa-cog', adminOnly: true },
 ];
 
 const TagManagement = () => {
+  // isAdmin (minexx): Settings tab. canManage (everyone with Tag Management in the menu): all other actions
   const isAdmin = isAdminUser();
+  const canManage = canManageTags();
   const platform = localStorage.getItem('_dash') || '3ts';
 
   // The open tab and every tab's filters live in the page address, so a report can be shared
   const [params, setParams] = useSearchParams();
-  const visibleTabs = TABS.filter((t) => !t.hidden && (!t.adminOnly || isAdmin));
+  const visibleTabs = TABS.filter((t) => !t.hidden && (!t.managerOnly || canManage) && (!t.adminOnly || isAdmin));
   const tab = visibleTabs.some((t) => t.key === params.get('tab')) ? params.get('tab') : 'overview';
   const setTab = (key) => {
     const next = new URLSearchParams(params);
@@ -55,14 +58,14 @@ const TagManagement = () => {
   const [refreshKey, setRefreshKey] = useState(0);
   const [openTag, setOpenTag] = useState(null);
 
-  // Company users only pick from their own companies (the API limits the data the same way)
+  // Users who are not tag managers only pick from their own companies (the API limits the data the same way)
   const companies = useMemo(() => {
-    if (isAdmin) return allCompanies;
+    if (canManage) return allCompanies;
     let user = null;
     try { user = JSON.parse(localStorage.getItem('_authUsr')); } catch (e) { user = null; }
     const own = [user?.company, ...(user?.companies || [])].filter(Boolean).map(String);
     return allCompanies.filter((c) => own.includes(String(c.id)));
-  }, [allCompanies, isAdmin]);
+  }, [allCompanies, canManage]);
 
   const [openIssues, setOpenIssues] = useState(0);
   const [stockAlerts, setStockAlerts] = useState(NO_ALERTS);
@@ -74,10 +77,10 @@ const TagManagement = () => {
     []
   );
   const loadOpenIssues = useCallback(
-    () => (isAdmin
+    () => (canManage
       ? tagApi.useFailures({ status: 'OPEN', limit: 1 }).then((res) => setOpenIssues(res.total)).catch(() => {})
       : Promise.resolve()),
-    [isAdmin]
+    [canManage]
   );
 
   useEffect(() => {
@@ -111,7 +114,8 @@ const TagManagement = () => {
     setParams(next, { replace: true });
   };
 
-  const shared = { types, companies, isAdmin, refreshKey, onChanged: handleChanged, onOpenTag: setOpenTag };
+  // The tabs' isAdmin prop means "may do the actions" (generate, assign, return, void, cancel)
+  const shared = { types, companies, isAdmin: canManage, refreshKey, onChanged: handleChanged, onOpenTag: setOpenTag };
 
   return (
     <>
@@ -147,7 +151,7 @@ const TagManagement = () => {
           ))}
         </ul>
         <span className="badge light badge-primary" title={tr('Switch platform from the header')}>
-          {tr('Platform')}: {platform.toUpperCase()}{isAdmin ? '' : ` · ${tr('read only')}`}
+          {tr('Platform')}: {platform.toUpperCase()}{canManage ? '' : ` · ${tr('read only')}`}
         </span>
       </div>
 
@@ -157,7 +161,7 @@ const TagManagement = () => {
       )}
 
       {!loading && !error && (
-        <StockAlerts alerts={stockAlerts} isAdmin={isAdmin} onOpenSettings={() => setTab('settings')} />
+        <StockAlerts alerts={stockAlerts} isAdmin={canManage} onOpenSettings={isAdmin ? () => setTab('settings') : null} />
       )}
 
       {!loading && !error && (
@@ -165,12 +169,12 @@ const TagManagement = () => {
           {tab === 'overview' && (
             <OverviewTab summary={summary} types={types} stockAlerts={stockAlerts} companies={companies} onOpenTag={setOpenTag} />
           )}
-          {tab === 'batches' && isAdmin && <BatchesTab {...shared} onShowTags={showTags} />}
+          {tab === 'batches' && canManage && <BatchesTab {...shared} onShowTags={showTags} />}
           {tab === 'allocations' && <AllocationsTab {...shared} onShowTags={showTags} />}
           {tab === 'tags' && <TagsTab {...shared} />}
           {tab === 'balances' && <BalancesTab {...shared} stockAlerts={stockAlerts} />}
           {tab === 'issues' && <IssuesTab {...shared} />}
-          {tab === 'events' && isAdmin && <EventsTab {...shared} />}
+          {tab === 'events' && canManage && <EventsTab {...shared} />}
           {tab === 'settings' && isAdmin && <SettingsTab {...shared} />}
         </>
       )}

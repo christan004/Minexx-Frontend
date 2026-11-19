@@ -8,6 +8,7 @@ import axiosInstance from '../../services/AxiosInstance';
 import { Logout } from '../../store/actions/AuthActions';
 import { useNavigate } from 'react-router-dom';
 import { translations } from './Reportstranslation';
+import axios from 'axios';
 import { Bar } from "recharts";
 
 
@@ -149,10 +150,13 @@ const Exportchemical = ({ language, country }) => {
         }
 
         try {
-            const response = await axiosInstance.get(`report/suppliercomposition`, {
+            const response = await axios.get(`https://minexxapi-livescreen-p7n5ing2cq-uc.a.run.app/chemicalcomposition`, {
                 params: {
                     country: normalizedCountry,
                     mineral: selectedMineral
+                },
+                headers: {
+                    'Authorization': `Bearer ${token}`
                 }
             });
 

@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { filePreviewUrl, fileDownloadUrl } from '../../../services/FileUrls';
-import { getAPIEndpoint } from '../../../services/AccessControl';
 import { Tab, Nav, ListGroup, ProgressBar, Container, Row, Col, Modal, Button } from 'react-bootstrap';
 import { Link, useParams } from 'react-router-dom';
 import { toast } from 'react-toastify';
@@ -63,10 +61,10 @@ const Kyc = ({language, country}) => {
     if (currentState && currentState !== 'loading' && currentState !== 'error') {
       const driveId = currentState;
       if (action === 'view') {
-        window.open(filePreviewUrl(driveId), '_blank');
+        window.open(`https://drive.google.com/file/d/${driveId}/preview`, '_blank');
       } else {
         window.open(
-          fileDownloadUrl(driveId),
+          `https://drive.usercontent.google.com/download?id=${driveId}&export=download&authuser=0`,
           '_blank'
         );
       }
@@ -81,7 +79,7 @@ const Kyc = ({language, country}) => {
 
     try {
       const response = await fetch(
-        `${getAPIEndpoint('DRC')}document/file/${docId}`,
+        `https://minexxapi-drc-p7n5ing2cq-uc.a.run.app/document/file/${docId}`,
         {
           method: 'GET',
           headers: {
@@ -107,10 +105,10 @@ const Kyc = ({language, country}) => {
 
       // Open immediately — no second click needed
       if (action === 'view') {
-        window.open(filePreviewUrl(driveId), '_blank');
+        window.open(`https://drive.google.com/file/d/${driveId}/preview`, '_blank');
       } else {
         window.open(
-          fileDownloadUrl(driveId),
+          `https://drive.usercontent.google.com/download?id=${driveId}&export=download&authuser=0`,
           '_blank'
         );
       }
@@ -360,7 +358,7 @@ const Kyc = ({language, country}) => {
 
       // Fetch company info
       const companyResponse = await fetch(
-        `${getAPIEndpoint('DRC')}companies/country/${id}?country=${encodeURIComponent(normalizedCountry)}`,
+        `https://minexxapi-drc-p7n5ing2cq-uc.a.run.app/companies/country/${id}?country=${encodeURIComponent(normalizedCountry)}`,
         {
           method: 'GET',
           headers: {
@@ -376,7 +374,7 @@ const Kyc = ({language, country}) => {
 
       // Fetch documents — metadata only, file field will be null
       const companyDocResponse = await fetch(
-        `${getAPIEndpoint('DRC')}documentsnoAuth/${id}?country=${encodeURIComponent(normalizedCountry)}`,
+        `https://minexxapi-drc-p7n5ing2cq-uc.a.run.app/documentsnoAuth/${id}?country=${encodeURIComponent(normalizedCountry)}`,
         {
           method: 'GET',
           headers: {
@@ -396,7 +394,7 @@ const Kyc = ({language, country}) => {
 
       // Fetch shareholders
       const shareholderResponse = await fetch(
-        `${getAPIEndpoint('DRC')}shareholdersnoAuth/${id}?country=${encodeURIComponent(normalizedCountry)}`,
+        `https://minexxapi-drc-p7n5ing2cq-uc.a.run.app/shareholdersnoAuth/${id}?country=${encodeURIComponent(normalizedCountry)}`,
         {
           method: 'GET',
           headers: {
@@ -411,7 +409,7 @@ const Kyc = ({language, country}) => {
 
       // Fetch beneficial owners
       const beneficialResponse = await fetch(
-        `${getAPIEndpoint('DRC')}ownersnoAuth/${id}?country=${encodeURIComponent(normalizedCountry)}`,
+        `https://minexxapi-drc-p7n5ing2cq-uc.a.run.app/ownersnoAuth/${id}?country=${encodeURIComponent(normalizedCountry)}`,
         {
           method: 'GET',
           headers: {
@@ -485,7 +483,7 @@ const Kyc = ({language, country}) => {
           <a
             target="_blank"
             className="btn btn-info"
-            href={filePreviewUrl(driveId)}
+            href={`https://drive.google.com/file/d/${driveId}/preview`}
             rel="noreferrer"
           >
             {t("View")}
@@ -493,7 +491,7 @@ const Kyc = ({language, country}) => {
           <a
             target="_blank"
             className="btn btn-primary"
-            href={fileDownloadUrl(driveId)}
+            href={`https://drive.usercontent.google.com/download?id=${driveId}&export=download&authuser=0`}
             rel="noreferrer"
           >
             {t("Download")}
@@ -779,7 +777,7 @@ const Kyc = ({language, country}) => {
                           <h4 className="text-light mb-2 mt-4">{t("Address")}: {document.address}</h4>
                           <iframe
                             title={document.name}
-                            src={filePreviewUrl(document.nationalID)}
+                            src={`https://drive.google.com/file/d/${document.nationalID}/preview`}
                             width="100%"
                             height="500"
                             allow="autoplay"
@@ -810,7 +808,7 @@ const Kyc = ({language, country}) => {
                           <h4 className="text-light mb-2 mt-4">{t("Address")}: {owner.address}</h4>
                           <iframe
                             title={owner.name}
-                            src={filePreviewUrl(owner.nationalID)}
+                            src={`https://drive.google.com/file/d/${owner.nationalID}/preview`}
                             width="100%"
                             height="500"
                             allow="autoplay"

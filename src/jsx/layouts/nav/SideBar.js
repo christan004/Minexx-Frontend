@@ -185,7 +185,7 @@ const SideBar = ({ language, country }) => {
   // Restrict DRC-only navigation entries to the DRC country view.
   const processedMenu = processMenu(menu);
   const filteredMenu = processedMenu.filter(item =>
-    (item.to !== "Tags" && item.to !== "3tsminers" && item.to !== "tag-management") || country === "DRC"
+    (item.to !== "3tsminers" && item.to !== "tag-management") || country === "DRC"
   );
 
   let path = window.location.pathname;

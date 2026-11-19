@@ -155,10 +155,10 @@ export const RegulatorMenu = [
         iconStyle: <i className="flaticon-location"></i>,
         to: 'mines',
     },
-      {
-        title:'Tags',
-          iconStyle: <i className="fa fa-tags"></i>,
-        to: 'Tags',
+       {
+        title:'Tag Management',
+        iconStyle: <i className="flaticon-381-price-tag"></i>,
+        to: 'tag-management',
     },
 
     {
@@ -266,19 +266,7 @@ export const BMenu = [
         title: 'Knowledge Base',
         iconStyle: <i className="flaticon-monitor"></i>,
         to: 'knowledge' 
-    },
-    {
-        title:'Reporting',
-        to: 'reports',
-        update:"New",
-        iconStyle : <i className="flaticon-business-report" />,
-        content: [
-            {
-                title:'Supplier Chemical Composition',
-                to:'reports/suppliercomposition'
-            },
-        ]
-        }
+    }
 ]
 
 export const B_RWMenu = [
@@ -361,10 +349,10 @@ export const IMenu = [
         iconStyle: <i className="flaticon-location"></i>,
         to: 'mines',
     },
-      {
-        title:'Tags',
-          iconStyle: <i className="fa fa-tags"></i>,
-          to: 'Tags',
+    {
+        title:'Tag Management',
+        iconStyle: <i className="flaticon-381-price-tag"></i>,
+        to: 'tag-management',
     },
 
     {

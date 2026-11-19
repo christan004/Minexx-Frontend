@@ -572,7 +572,7 @@ const Exports = ({ language, country }) => {
                                                             )}
                                                             {country !== 'Gabon' && (<td>
                                                                 {_export.exportationID && progressData[_export.exportationID] ?
-                                                                    <a href={`/time-tracking/?id=${_export?.exportationID}`} rel="noreferrer" style={{ display: 'block', textDecoration: 'none', width: '100%' }}>
+                                                                    <Link to={`/time-tracking?id=${encodeURIComponent(_export.exportationID)}`} style={{ display: 'block', textDecoration: 'none', width: '100%' }}>
                                                                         <div className="d-flex align-items-center">
                                                                             <span className="me-2 font-weight-bold" style={{ minWidth: '40px' }}>
                                                                                 {progressData[_export.exportationID].percentage || 0}%
@@ -583,7 +583,7 @@ const Exports = ({ language, country }) => {
                                                                                 style={{ height: '20px', width: '100%', minWidth: '60px' }}
                                                                             />
                                                                         </div>
-                                                                    </a> :
+                                                                    </Link> :
                                                                     <span className="text-warning">Progress not available</span>
                                                                 }
                                                             </td>
